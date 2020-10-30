@@ -33,7 +33,7 @@
             }
         },
         "think-config": {
-            "mailer": "src/config/config.php",
+            "mailer": "src/config/config.php"
         }
     }
 }
