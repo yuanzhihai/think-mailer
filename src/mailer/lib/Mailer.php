@@ -514,12 +514,8 @@ class Mailer
     protected function parseParam(array $param, array $config = [])
     {
         $ret = [];
-        $leftDelimiter = isset($config['left_delimiter'])
-            ? $config['left_delimiter']
-            : Config::get('left_delimiter', '{');
-        $rightDelimiter = isset($config['right_delimiter'])
-            ? $config['right_delimiter']
-            : Config::get('right_delimiter', '}');
+        $leftDelimiter = $config['left_delimiter'] ?: Config::get('left_delimiter', '{');
+        $rightDelimiter = $config['right_delimiter']?: Config::get('right_delimiter', '}');
         foreach ($param as $k => $v) {
             // 处理变量中包含有对元数据嵌入的变量
             $this->embedImage($k, $v, $param);
@@ -547,7 +543,7 @@ class Mailer
                 if (!isset($v[2])) {
                     $v[2] = 'image.jpg';
                 }
-                list($imgData, $name, $mime) = $v;
+                [$imgData, $name, $mime] = $v;
                 $v = $this->message->embed(
                     new \Swift_Image($imgData, $name, $mime)
                 );
