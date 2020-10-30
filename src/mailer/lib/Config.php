@@ -81,9 +81,9 @@ class Config
     {
         if (class_exists('\\think\\facade\\Config')) {
             if (strpos(\think\App::VERSION, '6.0') !== false) {
-                self::$config = \think\facade\Config::get('mail');
+                self::$config = \think\facade\Config::get('mailer');
             } else {
-                self::$config = \think\facade\Config::get('mail.');
+                self::$config = \think\facade\Config::get('mailer.');
             }
         } else {
             // 其他框架如果未初始化则抛出异常
