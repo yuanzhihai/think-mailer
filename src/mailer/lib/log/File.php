@@ -38,7 +38,7 @@ class File
             $remote = '';
             $url    = '';
         } else {
-            $remote = $_SERVER["REMOTE_ADDR"] ?: '127.0.0.1';
+            $remote = $_SERVER["REMOTE_ADDR"] ?: '0.0.0.0';
             $url    = $_SERVER['REQUEST_URI'] ?: '/';
         }
         $content = '[ ' . $level . ' ] ' . $content;
