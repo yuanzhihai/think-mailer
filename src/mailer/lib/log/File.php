@@ -27,7 +27,7 @@ class File
         $now  = date(' c ');
         $path = Config::get('log_path');
         if (empty($path)) {
-            $path = dirname($_SERVER['DOCUMENT_ROOT']) . '/runtime/log/think-mail' . DIRECTORY_SEPARATOR;
+            $path =  './runtime/log/think-mail' . DIRECTORY_SEPARATOR;
         }
         $destination = $path . '/mailer-' . date('Y-m-d') . '.log';
         // 自动创建日志目录
