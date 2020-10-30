@@ -30,7 +30,7 @@
     "extra": {
         "think": {
             "config": {
-                "mailer": "src/Config/config.php"
+                "mailer": "src/config/config.php"
             }
         }
     }
