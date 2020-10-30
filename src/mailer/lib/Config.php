@@ -80,7 +80,11 @@ class Config
     private static function detect()
     {
         if (class_exists('\\think\\facade\\Config')) {
-            self::$config = \think\facade\Config::get('mailer');
+            if (strpos(\think\App::VERSION, '6.0') !== false) {
+                self::$config = \think\facade\Config::get('mail');
+            } else {
+                self::$config = \think\facade\Config::get('mail.');
+            }
         } else {
             // 其他框架如果未初始化则抛出异常
             throw new InvalidArgumentException('未初始化配置项，请使用 mail\\lib\\Config::init()初始化配置项');
