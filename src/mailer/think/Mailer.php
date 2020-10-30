@@ -15,7 +15,7 @@ use think\facade\Config as ThinkConfig;
 
 /**
  * Class Mailer
- * @package mailer\tp6
+ * @package mailer\think
  */
 class Mailer extends \mailer\lib\Mailer
 {
