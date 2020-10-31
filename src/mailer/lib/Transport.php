@@ -36,24 +36,21 @@ class Transport
      * 创建一个smtp传输对象
      *
      * @param array $config 配置信息
-     *
-     * @return Swift_SmtpTransport
+     * @return mixed
+     * @throws \Swift_DependencyException
      */
     public function createSmtpDriver($config = [])
     {
-        $config = array_merge(Config::get(), $config);
-
-        $transport = new Swift_SmtpTransport($config['host'], $config['port'], $config['security']);
-
-        if (isset($config['addr'])) {
-            $transport->setUsername($config['addr']);
-            $transport->setPassword($config['pass']);
-        }
-
+        $config    = array_merge(Config::get(), $config);
+        $transport = Swift_DependencyContainer::getInstance()->lookup('transport.smtp')
+            ->setHost($config['host'])
+            ->setPort($config['port'])
+            ->setUsername($config['addr'])
+            ->setPassword($config['pass'])
+            ->setEncryption($config['security']);
         if (isset($config['stream'])) {
             $transport->setStreamOptions($config['stream']);
         }
-
         return $transport;
     }
 
