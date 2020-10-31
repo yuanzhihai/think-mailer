@@ -18,6 +18,7 @@ class MailerConfig
     /********* 邮件驱动 *********/
     const DRIVER_SMTP = 'smtp';
     const DRIVER_SENDMAIL = 'sendmail';
+    const DRIVER_MAIL = 'mail';
 
     /********* 文本类型 *********/
     const CONTENT_HTML = 'text/html';
