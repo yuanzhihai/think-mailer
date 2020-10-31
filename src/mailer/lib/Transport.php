@@ -10,6 +10,7 @@
 
 namespace mailer\lib;
 
+use Swift_DependencyContainer;
 use Swift_SmtpTransport;
 use Swift_SendmailTransport;
 
@@ -58,16 +59,26 @@ class Transport
 
     /**
      * 创建一个sendmail传输对象
-     *
      * @param $sendmail null|string sendmail配置
-     *
-     * @return Swift_SendmailTransport
+     * @return mixed
+     * @throws \Swift_DependencyException
      */
     public function createSendmailDriver($sendmail = null)
     {
-        return new Swift_SendmailTransport($sendmail ?: Config::get('sendmail'));
+        return Swift_DependencyContainer::getInstance()->lookup('transport.sendmail')
+            ->setCommand($sendmail ?: Config::get('sendmail'));
     }
 
+
+    /**
+     * 创建一个mail传输对象
+     * @return array|mixed
+     * @throws \Swift_DependencyException
+     */
+    public function createMailDriver()
+    {
+        return Swift_DependencyContainer::getInstance()->lookup('transport.mail');
+    }
 
     /**
      * 获取邮件驱动
