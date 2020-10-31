@@ -1,9 +1,11 @@
-## Think Mail
-**一款支持所有PHP框架的优美的邮件发送类**，ThinkPHP5.1以上 开箱即用，其他框架初始化配置即可使用
+## Think Mailer
+**一款支持所有PHP框架的优美的邮件发送类，ThinkPHP5.1以上 开箱即用，其他框架初始化配置即可使用
 
-基于 SwiftMailer 二次开发, 为 ThinkPHP系列框架量身定制, 使 ThinkPHP 支持邮件模板、纯文本、附件邮件发送以及更多邮件功能, 邮件发送简单到只需一行代码
+php版本要求 >=7.1
 
-同时了方便其他框架或者非框架使用, think-mailer也非常容易拓展融合到其他框架中, 欢迎大家 `Fork` 和 `Star`, 提交代码让think-mail支持更多框架
+基于 SwiftMailer6.* 二次开发, 为ThinkPHP系列框架量身定制, 使 ThinkPHP 支持邮件模板、纯文本、附件邮件发送以及更多邮件功能, 邮件发送简单到只需一行代码
+
+同时了方便其他框架或者非框架使用, think-mailer也非常容易拓展融合到其他框架中, 欢迎大家 `Fork` 和 `Star`, 提交代码让think-mailer支持更多框架
 
 ## 目录 
 * [优雅的发送邮件](#优雅的发送邮件) 
@@ -54,7 +56,7 @@
 use mailer\think\Mailer;
 
 $mailer = Mailer::instance();
-$mailer->from('10086@qq.com@qq.com', 'cattong')
+$mailer->from('10086@qq.com@qq.com', 'yzh52521')
     ->to('your-mail@domain.com')
     ->subject('纯文本测试')
     ->text('欢迎您使用think-mail')
@@ -96,10 +98,10 @@ git clone https://github.com/swiftmailer/swiftmailer swiftmailer
 
 
 ## 配置
-在配置文件里配置如下信息, 可以配置在 `mail.php` 或 `config.php` 文件中, 但要保证能通过 `mail.driver`, `mail.host` 访问到配置信息, 内容如下:
+在配置文件里配置如下信息, 可以配置在 `mailer.php` 或 `config.php` 文件中, 但要保证能通过 `mail.driver`, `mail.host` 访问到配置信息, 内容如下:
 ```
 return [
-        'driver'          => 'smtp', // 邮件驱动, 支持 smtp|sendmail 2种驱动
+        'driver'          => 'smtp', // 邮件驱动, 支持 smtp|sendmail|mail 3种驱动
         'host'            => 'smtp.qq.com', // SMTP服务器地址
         'port'            => 465, // SMTP服务器端口号,一般为25
         'addr'            => '', // 发件邮箱地址
@@ -119,7 +121,7 @@ return [
 ```
 ### 部分配置详解
 #### driver
-可选值可以是字符串、数组、对象。如果是字符串，只能是 `smtp|sendmail`，即内置的2种邮件驱动；如果是数组，必须是可以实例调用的方法，例如 `['mailer\\lib\\Transport', 'createSmtpDriver']` ，即是调用的 `(new mailer\lib\Transport)->createSmtpDriver()` 方法，如果是对象，就是返回的一个 `Swift_Transport` 对象，详情请查看 SwiftMailer 官网
+可选值可以是字符串、数组、对象。如果是字符串，只能是 `smtp|sendmail|mail`，即内置的3种邮件驱动；如果是数组，必须是可以实例调用的方法，例如 `['mailer\\lib\\Transport', 'createSmtpDriver']` ，即是调用的 `(new mailer\lib\Transport)->createSmtpDriver()` 方法，如果是对象，就是返回的一个 `Swift_Transport` 对象，详情请查看 SwiftMailer 官网
 
 #### log_left_delimiter & right_delimiter
 该值为内置模板变量 (调用`text()`,`raw()`,`line()`,`html()`方式时传递的变量) 定界值，例如默认定界值时 `{name}`， 如果变量为 `['name' => 'think-mailer']`，那么 `{name}` 会被替换为 `think-mailer`，加入模板中变量占位符是 `{$name}`，那么此时可以修改左定界符为 `{$`，此时 `{$name}` 也能被正常替换为 `think-mailer`
@@ -154,7 +156,7 @@ public static function write($content, $level = 'debug')
 // 不支持自动载入的框架请手动引入自动载入文件
 // require_once '/path/to/think-mail/src/autoload.php';
 
-use mailer\thibk\Mailer
+use mailer\think\Mailer
 ```
 
 ### 创建实例
@@ -167,17 +169,17 @@ $mailer = Mailer::instance();
 以下几种方式任选一种
 ```
 $mailer->to(['10086@qq.com']);
-$mailer->to(['10086@qq.com' => 'cattong']);
-$mailer->to('10086@qq.com', 'cattong');
-$mailer->to(['tianpian0805@qq.com', '10086@qq.com' => 'cattong']);
+$mailer->to(['10086@qq.com' => 'yzh52521']);
+$mailer->to('10086@qq.com', 'yzh52521');
+$mailer->to(['tianpian0805@qq.com', '10086@qq.com' => 'yzh52521']);
 $mailer->to(['tianpian0805@qq.com', '10086@qq.com', 'tianpian0805@163.com']);
 ```
 
 ### 设置发件人
 发件人邮箱地址必须和配置项里一致, 默认会自动设置发件地址 (配置里的addr) 和发件人 (配置里的name)
 ```
-$mailer->from('10086@qq.com', 'cattong');
-$mailer->from(['10086@qq.com' => 'cattong']);
+$mailer->from('10086@qq.com', 'yzh52521');
+$mailer->from(['10086@qq.com' => 'yzh52521']);
 ```
 
 ### 设置邮件主题
@@ -215,13 +217,13 @@ $mailer->text('欢迎使用{name}', ['name' => 'think-mailer']);
 $mailer->line('尊敬的 访客: ');
 $mailer->line('   欢迎您使用think-mailer');
 $mailer->line(); // 不传值默认输出空行
-$mailer->line('cattong ' . date('Y-m-d') );
+$mailer->line('yzh52521 ' . date('Y-m-d') );
 // 以上历程输出
 /***************
 尊敬的 访客: 
    欢迎您使用think-mailer
    
-cattong 2016-12-01
+yzh52521 2020-10-01
 ****************/
 ```
 
@@ -258,7 +260,7 @@ $mailer->view('admin@mail/register', ['account' => $account, 'name' => $name]);
 #### 示例
 ```
 Mailer::instance()
-    ->to('10086@qq.com', 'cattong') 
+    ->to('10086@qq.com', 'yzh52521') 
     ->subject('测试邮件模板中嵌入图片元数据')
     ->view('index@mail/index', [
         'date' => date('Y-m-d H:i:s'),     
@@ -290,7 +292,7 @@ Mailer::instance()
 在 HTML 中使用一样:
 ```
 Mailer::instance()
-    ->to('10086@qq.com', 'cattong') 
+    ->to('10086@qq.com', 'yzh52521') 
     ->subject('测试邮件模板中嵌入图片元数据')
     ->html('<img src="{image}" />图片测试', [
         'embed:image' => ROOT_PATH . 'image.jpg',
@@ -394,7 +396,7 @@ $mailer->send(
             ->subject('测试邮件');
             },
     function () {
-        return \Swift_SmtpTransport::newInstance(
+        return (new \Swift_SmtpTransport(
                     'host', 'port', 'security' 
                 )
                 ->setUsername($config['addr'])
@@ -504,14 +506,14 @@ class Config
 ```
 
 ## 方法注入
-`mailer\lib\Mailer` 默认不带 `view()` 方法，但要扩展该类，可以使用继承，也可以直接动态给该类注册方法，使用 `Mailer::addMethod($methodName, $methodCallable)` 进行方法注册，例如给 ThinkPHP5 框架注册 `view()` 方法：
+`mailer\lib\Mailer` 默认不带 `view()` 方法，但要扩展该类，可以使用继承，也可以直接动态给该类注册方法，使用 `Mailer::addMethod($methodName, $methodCallable)` 进行方法注册，例如给 ThinkPHP6 框架注册 `view()` 方法：
 ```
 use mailer\lib\Mailer
 use think\facade\View
 
 Mailer::addMethod('view', function ($template, $param = [], $config = [])
 {
-    $view = View::instance(Config::get('template'), Config::get('view_replace_str'));
+    $view = View::instance(Config::get('view'), Config::get('tpl_replace_string'));
     // 处理变量中包含有对元数据嵌入的变量
     foreach ($param as $k => $v) {
         $this->embedImage($k, $v, $param);
@@ -564,7 +566,7 @@ Config::init($config);
  */
 public function view($template, $param = [], $config = [])
 {
-    $view = View::instance(ThinkConfig::get('template'), ThinkConfig::get('view_replace_str'));
+    $view = View::instance(ThinkConfig::get('view'), ThinkConfig::get('tpl_replace_string'));
     // 处理变量中包含有对元数据嵌入的变量
     foreach ($param as $k => $v) {
         $this->embedImage($k, $v, $param);
@@ -593,7 +595,7 @@ Config::init($config);
 // 第二步：注册view方法
 Mailer::addMethod('view', function ($template, $param = [], $config = [])
 {
-    $view = \think\View::instance(Config::get('template'), Config::get('view_replace_str'));
+    $view = \think\View::instance(Config::get('view'), Config::get('tpl_replace_string'));
     // 处理变量中包含有对元数据嵌入的变量
     foreach ($param as $k => $v) {
         $this->embedImage($k, $v, $param);

@@ -6,7 +6,7 @@
  * 可以配置在 mailer.php 或 config.php 文件中, 但要保证能通过 mail.driver, mail.host 访问到配置信息
  */
 return [
-    'driver'          => 'smtp', // 邮件驱动, 支持 smtp|sendmail 2种驱动
+    'driver'          => 'smtp', // 邮件驱动, 支持 smtp|sendmail|mail 3种驱动
     'host'            => 'smtp.qq.com', // SMTP服务器地址
     'port'            => 465, // SMTP服务器端口号,一般为25
     'addr'            => '', // 发件邮箱地址
