@@ -33,7 +33,7 @@ class Mailer
      */
     protected $message;
     /**
-     * @var \Swift_SmtpTransport|\Swift_SendmailTransport
+     * @var \Swift_DependencyContainer
      */
     protected $transport;
     /**
