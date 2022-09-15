@@ -1,0 +1,17 @@
+{% extends "@mail/layout.twig" %}
+
+{% block header %}
+    {% component "@mail/header" with { url: config('app.url') } %}
+        {{ config('app.name') }}
+    {% endcomponent %}
+{% endblock %}
+
+{% block body %}
+    {{ slot|markdown|raw }}
+{% endblock %}
+
+{% block footer %}
+    {% component "@mail/footer" %}
+        © {{ 'now'|date('Y') }} {{ config('app.name') }}. All rights reserved.
+    {% endcomponent %}
+{% endblock %}
