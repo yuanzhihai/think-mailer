@@ -4,7 +4,6 @@
     "keywords": [
         "think-mailer",
         "mailer",
-        "phpmailer",
         "swiftmailer",
         "mail",
         "thinkphp6"
@@ -18,22 +17,25 @@
         }
     ],
     "require": {
-        "php": ">=7.1",
-        "swiftmailer/swiftmailer": "^6.0"
+        "php": ">=8.0",
+        "symfony/mailer": "^6.0",
+        "topthink/think-queue": "^3.0",
+        "cebe/markdown": "^1.1",
+        "yunwuxin/think-twig": "^3.0",
+        "tijsverkoyen/css-to-inline-styles": "^2.2",
+        "topthink/framework": "^6.0",
+      "ext-fileinfo": "*"
     },
     "autoload": {
         "psr-4": {
-            "mailer\\": "src/mailer"
+            "yzh52521\\": "src"
         }
     },
     "extra": {
         "think": {
             "config": {
-                "mailer": "src/config/config.php"
+                "mail": "src/config.php"
             }
-        },
-        "think-config": {
-            "mailer": "src/config/config.php"
         }
     }
 }
