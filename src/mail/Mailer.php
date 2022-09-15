@@ -110,8 +110,7 @@ class Mailer
             $message->bcc($this->bcc);
         }
 
-
-        return $this->sendMessage($message);
+        $this->sendMessage($message);
     }
 
     /**
@@ -156,9 +155,8 @@ class Mailer
     {
         try {
             $this->mailer->send($message->getSymfonyMessage(), Envelope::create($message->getSymfonyMessage()));
-            return true;
-        } finally {
-            return false;
+        } catch ( \Exception $e ) {
+            throw new \InvalidArgumentException('error mailer: ' . $e->getMessage(), $e->getCode(), $e);
         }
     }
 
