@@ -3,7 +3,6 @@
 namespace yzh52521\mail;
 
 use think\Collection;
-use think\Container;
 
 /**
  * Class Mailable
@@ -36,6 +35,8 @@ class Mailable
      */
     public $tags = [];
 
+    public $charset='utf-8';
+
     /** @var string 标题 */
     public $subject;
 
@@ -65,11 +66,6 @@ class Mailable
     protected function build()
     {
         //...
-    }
-
-    public function render()
-    {
-        return Container::getInstance()->make('message')->render();
     }
 
     public function withSymfonyMessage($callback)

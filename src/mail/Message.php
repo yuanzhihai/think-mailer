@@ -19,8 +19,6 @@ use Symfony\Component\Mime\Email;
 /**
  * Class Message
  * @package yzh52521\mail
- *
- * @method setBody( $body, $contentType = null, $charset = null )
  */
 class Message
 {
@@ -38,8 +36,9 @@ class Message
 
     public function __construct(Mailable $mailable, View $view, App $app)
     {
-        $this->view = $view;
-        $this->app  = $app;
+        $this->view    = $view;
+        $this->app     = $app;
+        $this->message = new Email();
 
         $this->build($mailable);
     }
@@ -47,6 +46,7 @@ class Message
     protected function build(Mailable $mailable)
     {
         $this->app->invoke([$mailable, 'build']);
+
 
         $this->buildContent($mailable)
             ->buildFrom($mailable)
@@ -77,26 +77,6 @@ class Message
         return $data;
     }
 
-    public function render(Mailable $mailable)
-    {
-        $data = $this->buildViewData($mailable);
-
-        if ( isset($mailable->markdown) ) {
-
-            $html = $this->parseDown($mailable->markdown, $data, $mailable->markdownCallback);
-
-            return ( new CssToInlineStyles() )->convert($html, file_get_contents(__DIR__ . '/resource/css/default.css'));
-
-        } else {
-            if ( isset($mailable->view) ) {
-                return $this->fetchView($mailable->view, $data);
-            } elseif ( isset($mailable->textView) ) {
-                return $this->fetchView($mailable->textView, $data);
-            }
-        }
-
-    }
-
     /**
      * 添加内容
      * @param Mailable $mailable
@@ -112,12 +92,12 @@ class Message
 
             $html = ( new CssToInlineStyles() )->convert($html, file_get_contents(__DIR__ . '/resource/css/default.css'));
 
-            $this->setBody($html, 'text/html');
+            $this->html($html, $mailable->charset);
         } else {
             if ( isset($mailable->view) ) {
-                $this->setBody($this->fetchView($mailable->view, $data), 'text/html');
+                $this->html($this->fetchView($mailable->view, $data), $mailable->charset);
             } elseif ( isset($mailable->textView) ) {
-                $method = isset($mailable->view) ? 'addPart' : 'setBody';
+                $method = isset($mailable->view) ? 'text' : 'html';
 
                 $this->$method($this->fetchView($mailable->textView, $data), 'text/plain');
             }
@@ -261,7 +241,7 @@ class Message
     protected function runCallbacks(Mailable $mailable)
     {
         foreach ( $mailable->callbacks as $callback ) {
-            $callback($this->getSwiftMessage());
+            $callback($this->getSymfonyMessage());
         }
 
         return $this;
@@ -276,8 +256,9 @@ class Message
      */
     public function from($address, $name = null)
     {
-        $this->message->from($address, $name);
-
+        is_array($address)
+            ? $this->message->from(...$address)
+            : $this->message->from(new Address($address, (string)$name));
         return $this;
     }
 

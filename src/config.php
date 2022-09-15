@@ -1,20 +1,26 @@
 <?php
 
 return [
-    'type'     => 'smtp', //smtp sendmail
+    'default'  => 'smtp', //smtp sendmail
     'from'     => [
-        'address' => 'example@example',
-        'name'    => 'App Name',
+        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+        'name'    => env('MAIL_FROM_NAME', 'Example'),
     ],
     'smtp'     => [
-        'host'       => 'mail.example.com',
-        'port'       => 587,
-        'encryption' => 'tls',
-        'username'   => 'username',
-        'password'   => 'password',
+        'transport'  => 'smtp',
+        'host'       => env('MAIL_HOST', 'mail.example.com'),
+        'port'       => env('MAIL_PORT', 587),
+        'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+        'username'   => env('MAIL_USERNAME', 'username'),
+        'password'   => env('MAIL_PASSWORD', 'password'),
         'timeout'    => null,
     ],
     'sendmail' => [
-        'path' => '/usr/sbin/sendmail -t -i',
+        'transport' => 'sendmail',
+        'path'      => '/usr/sbin/sendmail -t -i',
+    ],
+    'log'      => [
+        'transport' => 'log',
+        'channel'   => env('MAIL_LOG_CHANNEL', 'file'),
     ],
 ];

@@ -76,11 +76,6 @@ class Mailer
         return $this;
     }
 
-    public function render($mailable)
-    {
-        $message = $this->createMessage($mailable);
-        return $message->render($mailable);
-    }
 
     /**
      * 发送邮件
@@ -114,7 +109,7 @@ class Mailer
         }
 
 
-        $this->sendMessage($message);
+        return $this->sendMessage($message);
     }
 
     /**

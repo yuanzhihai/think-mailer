@@ -92,7 +92,7 @@ class Mail extends Manager
 
         if ( $logger instanceof Log ) {
             $logger = $logger->channel(
-                $config['channel'] ?? $this->app->config->get('mail.log_channel')
+                $config['channel'] ?? $this->app->config->get('mail.channel')
             );
         }
 
@@ -145,6 +145,6 @@ class Mail extends Manager
      */
     public function getDefaultDriver()
     {
-        return $this->app->config->get('mail.type');
+        return $this->app->config->get('mail.default');
     }
 }

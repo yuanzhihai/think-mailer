@@ -24,7 +24,7 @@
         "yunwuxin/think-twig": "^3.0",
         "tijsverkoyen/css-to-inline-styles": "^2.2",
         "topthink/framework": "^6.0",
-      "ext-fileinfo": "*"
+        "ext-fileinfo": "*"
     },
     "autoload": {
         "psr-4": {
