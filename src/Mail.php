@@ -78,7 +78,7 @@ class Mail extends Manager
      *
      * @param array $config
      */
-    protected function createLogTransport(array $config)
+    protected function createLogDriver(array $config)
     {
         $logger = $this->app->make(LoggerInterface::class);
 
@@ -89,15 +89,6 @@ class Mail extends Manager
         }
 
         return new LogTransport($logger);
-    }
-
-    /**
-     * Create an instance of the Array Transport Driver.
-     *
-     */
-    protected function createArrayTransport()
-    {
-        return new ArrayTransport;
     }
 
 
