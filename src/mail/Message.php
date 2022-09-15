@@ -19,6 +19,7 @@ use Symfony\Component\Mime\Email;
 /**
  * Class Message
  * @package yzh52521\mail
+ * @method html( $body, $charset = null )
  */
 class Message
 {
@@ -46,7 +47,6 @@ class Message
     protected function build(Mailable $mailable)
     {
         $this->app->invoke([$mailable, 'build']);
-
 
         $this->buildContent($mailable)
             ->buildFrom($mailable)
@@ -77,6 +77,26 @@ class Message
         return $data;
     }
 
+    public function render(Mailable $mailable)
+    {
+        $data = $this->buildViewData($mailable);
+
+        if ( isset($mailable->markdown) ) {
+
+            $html = $this->parseDown($mailable->markdown, $data, $mailable->markdownCallback);
+
+            $html = ( new CssToInlineStyles() )->convert($html, file_get_contents(__DIR__ . '/resource/css/default.css'));
+
+            return $html;
+        } else {
+            if ( isset($mailable->view) ) {
+                return $this->fetchView($mailable->view, $data);
+            } elseif ( isset($mailable->textView) ) {
+                return $this->fetchView($mailable->textView, $data);
+            }
+        }
+    }
+
     /**
      * 添加内容
      * @param Mailable $mailable
@@ -97,9 +117,9 @@ class Message
             if ( isset($mailable->view) ) {
                 $this->html($this->fetchView($mailable->view, $data), $mailable->charset);
             } elseif ( isset($mailable->textView) ) {
-                $method = isset($mailable->view) ? 'text' : 'html';
+                $method = isset($mailable->view) ? 'html' : 'text';
 
-                $this->$method($this->fetchView($mailable->textView, $data), 'text/plain');
+                $this->$method($this->fetchView($mailable->textView, $data), $mailable->charset);
             }
         }
         return $this;

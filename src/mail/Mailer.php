@@ -76,6 +76,16 @@ class Mailer
         return $this;
     }
 
+    /**
+     *  预览邮件
+     * @param Mailable $mailable
+     */
+    public function render(Mailable $mailable)
+    {
+        $message = $this->createMessage($mailable);
+        return $message->render($mailable);
+    }
+
 
     /**
      * 发送邮件
