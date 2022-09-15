@@ -10,14 +10,18 @@
 // +----------------------------------------------------------------------
 namespace yzh52521;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Transport\Dsn;
 use Symfony\Component\Mailer\Transport\SendmailTransport;
 use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
 use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransportFactory;
 use Symfony\Component\Mailer\Transport\Smtp\Stream\SocketStream;
 use Symfony\Component\Mailer\Mailer as SymfonyMailer;
+use think\facade\Log;
 use think\Manager;
 use yzh52521\mail\Mailer;
+use yzh52521\mail\transport\ArrayTransport;
+use yzh52521\mail\transport\LogTransport;
 
 /**
  * Class Mail
@@ -75,6 +79,33 @@ class Mail extends Manager
     protected function createSendmailDriver($config)
     {
         return new SendmailTransport($config['path'] ?? $this->app->config->get('mail.sendmail.path'));
+    }
+
+    /**
+     * Create an instance of the Log Transport driver.
+     *
+     * @param array $config
+     */
+    protected function createLogTransport(array $config)
+    {
+        $logger = $this->app->make(LoggerInterface::class);
+
+        if ( $logger instanceof Log ) {
+            $logger = $logger->channel(
+                $config['channel'] ?? $this->app->config->get('mail.log_channel')
+            );
+        }
+
+        return new LogTransport($logger);
+    }
+
+    /**
+     * Create an instance of the Array Transport Driver.
+     *
+     */
+    protected function createArrayTransport()
+    {
+        return new ArrayTransport;
     }
 
 
