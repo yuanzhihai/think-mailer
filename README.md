@@ -273,7 +273,7 @@ public function build()
 
 在邮件中嵌入内联图片通常很麻烦;
 
-在 `with()`方法, 该数组必须有一个变量, 格式为 `'cid:image' => '/path/to/image.jpg'`
+在 `with()`方法 参数格式为 `'cid:image' => '/path/to/image.jpg'`
 或者 `cid:image' => ['file_stream', 'filename']`, 即参数数组的键名是上面配置的 `嵌入标签 + 变量名`,
 但值有两种情况:
 
