@@ -71,7 +71,7 @@ class Mail extends Manager
 
     protected function createSendmailDriver($config)
     {
-        return new SendmailTransport($config['path'] ?? $this->app->config->get('mail.sendmail.path'));
+        return new SendmailTransport($config['path'] ?? $this->getMailConfig('sendmail', 'path'));
     }
 
     /**
@@ -85,7 +85,7 @@ class Mail extends Manager
 
         if ( $logger instanceof Log ) {
             $logger = $logger->channel(
-                $config['channel'] ?? $this->app->config->get('mail.channel')
+                $config['channel'] ?? $this->getMailConfig('mail', 'channel')
             );
         }
 
@@ -106,7 +106,37 @@ class Mail extends Manager
 
     protected function resolveConfig(string $name)
     {
-        return $this->app->config->get("mail.{$name}");
+        return $this->getConfig($name);
+    }
+
+    protected function resolveType(string $name)
+    {
+        return $this->getMailConfig($name, 'transport', 'smtp');
+    }
+
+    /**
+     * 获取mail配置
+     * @param string $mailer
+     * @param null $name
+     * @param null $default
+     * @return array
+     */
+    public function getMailConfig($mailer, $name = null, $default = null)
+    {
+        if ( $config = $this->getConfig("{$mailer}") ) {
+            return Arr::get($config, $name, $default);
+        }
+
+        throw new \InvalidArgumentException("mail [$mailer] not found.");
+    }
+
+    public function getConfig(string $name = null, $default = null)
+    {
+        if ( !is_null($name) ) {
+            return $this->app->config->get('mail.' . $name, $default);
+        }
+
+        return $this->app->config->get('mail');
     }
 
     protected function createDriver(string $name)
@@ -139,6 +169,6 @@ class Mail extends Manager
      */
     public function getDefaultDriver()
     {
-        return $this->app->config->get('mail.default');
+        return $this->getConfig('default');
     }
 }
