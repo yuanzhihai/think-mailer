@@ -283,7 +283,7 @@ public function build()
 例如 `fopen()` 方法获取的文件数据流, 第二个参数为文件名, 默认为 `image`
 
 ```php
-   ->with('index@mail/index', [
+   ->with([
         'date' => date('Y-m-d H:i:s'),     
         'cid:image' => '/path/to/image1.jpg',
         // 'cid:image' => [fopen('/path/to/image1.jpg','r')],
