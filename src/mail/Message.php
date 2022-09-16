@@ -159,12 +159,41 @@ class Message
     /**
      * 调用模板引擎渲染模板
      * @param $view
-     * @param $data
+     * @param $param
      * @return string
      */
-    protected function fetchView($view, $data)
+    protected function fetchView($view, $param)
     {
-        return $this->view->fetch($view, $data);
+        // 处理变量中包含有对元数据嵌入的变量
+        foreach ( $param as $k => $v ) {
+            if ( str_contains($k, 'cid:') ) {
+                $this->embedImage($k, $v, $param);
+            }
+        }
+        return $this->view->fetch($view, $param);
+    }
+
+    /**
+     * 对嵌入元数据的变量进行处理
+     *
+     * @param string $k
+     * @param array|string $v
+     * @param array $param
+     */
+    protected function embedImage(string &$k, array|string &$v, array &$param)
+    {
+        if ( is_array($v) && $v ) {
+            if ( !isset($v[1]) ) {
+                $v[1] = 'image';
+            }
+            [$img, $name] = $v;
+            $embed = $this->embedData($img, $name);
+        } else {
+            $embed = $this->embed($v);
+        }
+        unset($param[$k]);
+        $k         = substr($k, strlen('cid:'));
+        $param[$k] = $embed;
     }
 
     /**
