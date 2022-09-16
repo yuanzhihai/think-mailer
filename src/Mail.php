@@ -10,9 +10,10 @@ use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransportFactory;
 use Symfony\Component\Mailer\Transport\Smtp\Stream\SocketStream;
 use Symfony\Component\Mailer\Mailer as SymfonyMailer;
 use think\facade\Log;
+use think\helper\Arr;
+use think\helper\Str;
 use think\Manager;
 use yzh52521\mail\Mailer;
-use yzh52521\mail\transport\ArrayTransport;
 use yzh52521\mail\transport\LogTransport;
 
 /**
@@ -117,9 +118,19 @@ class Mail extends Manager
         /** @var Mailer $mailer */
         $mailer = $this->app->invokeClass(Mailer::class, [$symfony]);
 
-        $mailer->from($this->app->config->get('mail.from'));
-
+        foreach ( ['from', 'reply_to', 'to', 'return_path'] as $type ) {
+            $this->setGlobalAddress($mailer, $this->app->config->get('mail'), $type);
+        }
         return $mailer;
+    }
+
+    protected function setGlobalAddress($mailer, array $config, string $type)
+    {
+        $address = Arr::get($config, $type, $this->app->config->get('mail.' . $type));
+
+        if ( is_array($address) && isset($address['address']) ) {
+            $mailer->{'always' . Str::studly($type)}($address['address'], $address['name']);
+        }
     }
 
     /**

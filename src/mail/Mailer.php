@@ -18,6 +18,10 @@ class Mailer
     /** @var array 发信人 */
     protected $from;
 
+    public $replyTo = [];
+
+    public $returnPath = [];
+
     /** @var array 收信人 */
     protected $to = [];
 
@@ -42,28 +46,78 @@ class Mailer
         $this->container = $container;
     }
 
-    public function from($users)
+    /**
+     * Set the global from address and name.
+     *
+     * @param string $address
+     * @param string|null $name
+     * @return void
+     */
+    public function alwaysFrom($address, $name = null)
     {
-        $this->from = $users;
+        $this->from = compact('address', 'name');
     }
 
-    public function to($users)
+    /**
+     * Set the global reply-to address and name.
+     *
+     * @param string $address
+     * @param string|null $name
+     * @return void
+     */
+    public function alwaysReplyTo($address, $name = null)
     {
-        $this->to = $users;
+        $this->replyTo = compact('address', 'name');
+    }
+
+    /**
+     * Set the global return path address.
+     *
+     * @param string $address
+     * @return void
+     */
+    public function alwaysReturnPath($address)
+    {
+        $this->returnPath = compact('address');
+    }
+
+    /**
+     * Set the global to address and name.
+     *
+     * @param string $address
+     * @param string|null $name
+     * @return void
+     */
+    public function alwaysTo($address, $name = null)
+    {
+        $this->to = compact('address', 'name');
+    }
+
+    public function from($address, $name = null)
+    {
+        $this->from = compact('address', 'name');
 
         return $this;
     }
 
-    public function cc($users)
+
+    public function to($address, $name = null)
     {
-        $this->cc = $users;
+        $this->to = compact('address', 'name');
 
         return $this;
     }
 
-    public function bcc($users)
+    public function cc($address, $name = null)
     {
-        $this->bcc = $users;
+        $this->cc = compact('address', 'name');
+
+        return $this;
+    }
+
+    public function bcc($address, $name = null)
+    {
+        $this->bcc = compact('address', 'name');
 
         return $this;
     }
@@ -75,7 +129,7 @@ class Mailer
     public function render(Mailable $mailable)
     {
         $message = $this->createMessage($mailable);
-        return $message->render($mailable);
+        return $message->getSymfonyMessage()->getHtmlBody();
     }
 
 
@@ -109,7 +163,6 @@ class Mailer
         if ( !empty($this->bcc) ) {
             $message->bcc($this->bcc);
         }
-
         $this->sendMessage($message);
     }
 
@@ -142,6 +195,14 @@ class Mailer
     {
         if ( !empty($this->from['address']) ) {
             $mailable->from($this->from['address'], $this->from['name']);
+        }
+
+        if ( !empty($this->replyTo['address']) ) {
+            $mailable->replyTo($this->replyTo['address'], $this->replyTo['name']);
+        }
+
+        if ( !empty($this->returnPath['address']) ) {
+            $mailable->returnPath($this->returnPath['address']);
         }
 
         return $this->container->invokeClass(Message::class, [$mailable]);

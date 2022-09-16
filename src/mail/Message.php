@@ -77,26 +77,6 @@ class Message
         return $data;
     }
 
-    public function render(Mailable $mailable)
-    {
-        $data = $this->buildViewData($mailable);
-
-        if ( isset($mailable->markdown) ) {
-
-            $html = $this->parseDown($mailable->markdown, $data, $mailable->markdownCallback);
-
-            $html = ( new CssToInlineStyles() )->convert($html, file_get_contents(__DIR__ . '/resource/css/default.css'));
-
-            return $html;
-        } else {
-            if ( isset($mailable->view) ) {
-                return $this->fetchView($mailable->view, $data);
-            } elseif ( isset($mailable->textView) ) {
-                return $this->fetchView($mailable->textView, $data);
-            }
-        }
-    }
-
     /**
      * 添加内容
      * @param Mailable $mailable
@@ -384,6 +364,7 @@ class Message
     {
         return $this->addAddresses($address, $name, 'ReplyTo');
     }
+
 
     /**
      * Add a recipient to the message.

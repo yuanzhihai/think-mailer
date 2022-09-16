@@ -1,0 +1,31 @@
+<?php
+declare (strict_types = 1);
+
+namespace {%namespace%};
+
+use think\queue\ShouldQueue;
+use yzh52521\mail\Mailable;
+
+class {%className%} extends Mailable
+{
+       /**
+         * Create a new message instance.
+         *
+         * @return void
+         */
+        public function __construct()
+        {
+            //
+        }
+
+        /**
+         * Build the message.
+         *
+         * @return $this
+         */
+        public function build()
+        {
+            $this->view('view.name');
+            return $this;
+        }
+}

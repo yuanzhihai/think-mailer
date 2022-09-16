@@ -35,10 +35,16 @@ class Mailable
      */
     public $tags = [];
 
-    public $charset='utf-8';
+    public $charset = 'utf-8';
 
     /** @var string 标题 */
     public $subject;
+
+    /**
+     * The HTML to use for the message.
+     * @var string
+     */
+    protected $html;
 
     /** @var string 邮件内容(富文本) */
     public $view;
@@ -119,6 +125,11 @@ class Mailable
         return $this->setAddress($address, $name, 'bcc');
     }
 
+    public function returnPath($address, $name = null)
+    {
+        return $this->setAddress($address, $name, 'returnPath');
+    }
+
     /**
      * 设置回复人
      * @param      $address
@@ -129,6 +140,7 @@ class Mailable
     {
         return $this->setAddress($address, $name, 'replyTo');
     }
+
 
     /**
      * 设置地址
@@ -195,6 +207,19 @@ class Mailable
     }
 
     /**
+     * Set the rendered HTML content for the message.
+     *
+     * @param string $html
+     * @return $this
+     */
+    public function html($html)
+    {
+        $this->html = $html;
+
+        return $this;
+    }
+
+    /**
      * 设置模板
      * @param       $view
      * @param array $data
@@ -203,7 +228,7 @@ class Mailable
     public function view($view, array $data = [])
     {
         $this->view     = $view;
-        $this->viewData = $data;
+        $this->viewData = array_merge($this->viewData, $data);
 
         return $this;
     }
@@ -217,7 +242,7 @@ class Mailable
     public function text($textView, array $data = [])
     {
         $this->textView = $textView;
-        $this->viewData = $data;
+        $this->viewData = array_merge($this->viewData, $data);;
 
         return $this;
     }

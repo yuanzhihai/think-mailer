@@ -17,7 +17,7 @@
         }
     ],
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.0.2",
         "symfony/mailer": "^6.0",
         "topthink/think-queue": "^3.0",
         "cebe/markdown": "^1.1",
@@ -35,7 +35,10 @@
         "think": {
             "config": {
                 "mail": "src/config.php"
-            }
+            },
+            "services": [
+                "yzh52251\\Service"
+            ]
         }
     }
 }
