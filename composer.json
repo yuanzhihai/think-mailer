@@ -1,10 +1,11 @@
 {
     "name": "yzh52521/think-mailer",
-    "description": "A powerful and beautiful php mailer for All of ThinkPHP and Other PHP Frameworks based SwiftMailer",
+    "description": "A powerful and beautiful php mailer for All of ThinkPHP and Other PHP Frameworks based Symfony mailer",
     "keywords": [
         "think-mailer",
         "mailer",
         "swiftmailer",
+        "symfony mailer",
         "mail",
         "thinkphp6"
     ],
