@@ -37,7 +37,7 @@
                 "mail": "src/config.php"
             },
             "services": [
-                "yzh52251\\Service"
+                "yzh52521\\Service"
             ]
         }
     }
