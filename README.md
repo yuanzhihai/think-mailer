@@ -309,21 +309,15 @@ public function build()
 </body>
 </html>
 ```
-```
 
 ## 自定义 Symfony 消息
 
 该 Mailable 基类的 withSymfonyMessage 方法允许您注册一个闭包，在发送消息之前将使用 Symfony
 消息实例调用该闭包。这使您有机会在消息传递之前对其进行深度自定义：
 
-```php
+```
 use Symfony\Component\Mime\Email;
 
-/**
- * 构建消息.
- *
- * @return $this
- */
 public function build()
 {
     $this->view('emails.orders.shipped');
