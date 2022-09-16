@@ -2,26 +2,22 @@
 
 namespace yzh52521\command\make;
 
-use think\console\command\Make;
+use think\console\Command;
+use think\console\Input;
+use think\console\Output;
 
-class Mail extends Make
+class Mail extends Command
 {
-    protected $type = "Mail";
 
     protected function configure()
     {
-        parent::configure();
         $this->setName('make:mail')
             ->setDescription('Create a new mailable class');
     }
 
-    protected function getStub(): string
+    protected function execute(Input $input, Output $output)
     {
-        return __DIR__ . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'mailable.stub';
+        echo '111';
     }
 
-    protected function getNamespace(string $app): string
-    {
-        return parent::getNamespace($app) . '\\mail';
-    }
 }
