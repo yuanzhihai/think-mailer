@@ -274,20 +274,20 @@ public function build()
 在邮件中嵌入内联图片通常很麻烦;
 
 在 `with()`方法 参数格式为 `'cid:image' => '/path/to/image.jpg'`
-或者 `cid:image' => ['file_stream', 'filename']`, 即参数数组的键名是上面配置的 `嵌入标签 + 变量名`,
+或者 `cid:image' => ['file_stream', 'filename','filemine']`, 即参数数组的键名是上面配置的 `嵌入标签 + 变量名`,
 但值有两种情况:
 
 第一, 如果值为字符串, 则该值为图片的路径 (绝对路径或相对路径) 或者 有效的url地址;
 
-第二, 如果值为数组, 数组为 `['stream','name']` 的形式, 其中 `stream` 表示图片的数据流, 即是未保存的文件数据流,
-例如 `fopen()` 方法获取的文件数据流, 第二个参数为文件名, 默认为 `image`
-
+第二, 如果值为数组, 数组为 `['stream','name','mime']` 的形式, 其中 `stream` 表示图片的数据流, 即是未保存的文件数据流,
+例如 `fopen()` 方法获取的文件数据流, 第二个参数为文件名, 默认为 `image.jpg`,第三个参数可选, 为文件的mime类型, 默认为 `image/jpeg`
 ```php
    ->with([
         'date' => date('Y-m-d H:i:s'),     
         'cid:image' => '/path/to/image1.jpg',
         // 'cid:image' => [fopen('/path/to/image1.jpg','r')],
-        // 'cid:image' => [fopen('/path/to/image1.jpg','r'),'image'],
+        // 'cid:image' => [fopen('/path/to/image1.jpg','r'),'image.jpg'],
+        // 'cid:image' => [fopen('/path/to/image1.jpg','r'),'image.jpg','image/jpg'],
      ])
 ```
 

@@ -184,10 +184,13 @@ class Message
     {
         if ( is_array($v) && $v ) {
             if ( !isset($v[1]) ) {
-                $v[1] = 'image';
+                $v[1] = 'image.jpg';
             }
-            [$img, $name] = $v;
-            $embed = $this->embedData($img, $name);
+            if ( !isset($v[2]) ) {
+                $v[2] = null;
+            }
+            [$img, $name, $mime] = $v;
+            $embed = $this->embedData($img, $name, $mime);
         } else {
             $embed = $this->embed($v);
         }
