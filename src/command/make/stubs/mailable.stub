@@ -8,24 +8,24 @@ use yzh52521\mail\Mailable;
 
 class {%className%} extends Mailable
 {
-       /**
-         * Create a new message instance.
-         *
-         * @return void
-         */
-        public function __construct()
-        {
-            //
-        }
+    /**
+     * Create a new message instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        //
+    }
 
-        /**
-         * Build the message.
-         *
-         * @return $this
-         */
-        public function build()
-        {
-            $this->view('view.name');
-            return $this;
-        }
+    /**
+     * Build the message.
+     *
+     * @return $this
+     */
+    public function build()
+    {
+        $this->view('view.name');
+        return $this;
+    }
 }
