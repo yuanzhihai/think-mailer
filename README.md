@@ -290,6 +290,26 @@ public function build()
         // 'cid:image' => [fopen('/path/to/image1.jpg','r'),'image.jpg','image/jpg'],
      ])
 ```
+其中模板的内容如下:
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>测试邮件</title>
+</head>
+<body>
+<p>尊敬的cattong:</p>
+<p>     这是一封模板测试邮件</p>
+<p>{$date}</p>
+<p>
+    <img src="{$image}" alt="">
+</p>
+</body>
+</html>
+```
+```
 
 ## 自定义 Symfony 消息
 
