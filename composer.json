@@ -7,7 +7,8 @@
         "swiftmailer",
         "symfony mailer",
         "mail",
-        "thinkphp6"
+        "thinkphp6",
+        "thinkphp8"
     ],
     "type": "library",
     "license": "Apache-2.0",
@@ -19,12 +20,12 @@
     ],
     "require": {
         "php": ">=8.0.2",
-        "symfony/mailer": "^6",
-        "topthink/think-queue": "^3",
+        "symfony/mailer": "^6.0",
+        "topthink/think-queue": "^3.0",
         "cebe/markdown": "^1.1",
-        "yunwuxin/think-twig": "^3",
+        "yunwuxin/think-twig": "^3.0",
         "tijsverkoyen/css-to-inline-styles": "^2.2",
-        "topthink/framework": "^6",
+        "topthink/framework": "^6.0|^8.0",
         "ext-fileinfo": "*"
     },
     "autoload": {
