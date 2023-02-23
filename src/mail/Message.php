@@ -29,13 +29,8 @@ class Message
      */
     protected Email $message;
 
-    /** @var View */
-    protected $view;
 
-    /** @var App */
-    protected $app;
-
-    public function __construct(Mailable $mailable, View $view, App $app)
+    public function __construct(Mailable $mailable,protected View $view,protected App $app)
     {
         $this->view    = $view;
         $this->app     = $app;

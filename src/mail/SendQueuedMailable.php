@@ -6,13 +6,9 @@ use yzh52521\Mail;
 
 class SendQueuedMailable
 {
-    /** @var Mailable */
-    protected $mailable;
 
-
-    public function __construct(Mailable $mailable)
+    public function __construct(protected Mailable $mailable)
     {
-        $this->mailable = $mailable;
     }
 
     public function handle(Mail $mail)

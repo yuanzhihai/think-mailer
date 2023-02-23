@@ -12,9 +12,6 @@ use think\queue\ShouldQueue;
 class Mailer
 {
 
-    /** @var  SymfonyMailer */
-    protected $mailer;
-
     /** @var array 发信人 */
     protected $from;
 
@@ -32,18 +29,10 @@ class Mailer
     protected $bcc = [];
 
 
-    /** @var Queue */
-    protected $queue;
-
-    /** @var Container */
-    protected $container;
 
 
-    public function __construct(SymfonyMailer $mailer, Queue $queue, Container $container)
+    public function __construct(protected SymfonyMailer $mailer,protected Queue $queue,protected Container $container)
     {
-        $this->mailer    = $mailer;
-        $this->queue     = $queue;
-        $this->container = $container;
     }
 
     /**
