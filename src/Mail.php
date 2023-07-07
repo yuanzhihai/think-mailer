@@ -177,7 +177,7 @@ class Mail extends Manager
         return $factory->create(new Dsn(
             'postmark+api',
             'default',
-            $config['token'] ?? $this->app['config']->get('services.postmark.token'),
+            $config['token'] ?? $this->app->config->get('mail.postmark.token'),
             null,
             null,
             $options
