@@ -1,12 +1,102 @@
 # ThinkPHP6+ 邮件发送扩展
 
-支持 `smtp` `sendmail` `log` 等驱动，其中`log`驱动会把邮件内容写入日志，供调试用
+支持 `smtp` `sendmail` `Mailgun` 、`Postmark` 、 `Amazon SES`  `log` 等驱动，其中`log`驱动会把邮件内容写入日志，供调试用
 
 ## 安装
 
 ~~~
 composer require yzh52521/think-mailer
 ~~~
+
+## Mailgun 驱动
+要使用 Mailgun 驱动，可以先通过 composer 来安装 Mailgun 函数库 ：
+
+```
+composer require symfony/mailgun-mailer symfony/http-client
+```
+接着，在应用的 config/mail.php 配置文件中，将默认项设置成 mailgun  配置文件中包含以下选项：
+
+```
+'mailgun' => [
+    'domain' => env('MAILGUN_DOMAIN'),
+    'secret' => env('MAILGUN_SECRET'),
+    'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
+    'scheme' => 'https',
+],
+```
+如果不使用 US Mailgun region 区域终端 配置区域终端:
+
+```sql
+'mailgun' => [
+    'domain' => env('MAILGUN_DOMAIN'),
+    'secret' => env('MAILGUN_SECRET'),
+    'endpoint' => env('MAILGUN_ENDPOINT', 'api.eu.mailgun.net'),
+],
+```
+## Postmark 驱动
+要使用 Postmark 驱动，先通过 composer 来安装 Postmark 函数库：
+
+```
+composer require symfony/postmark-mailer symfony/http-client
+```
+
+接着，在应用的 config/mail.php 配置文件中，将默认项设置成 postmark。 config/mail.php 配置文件中包含如下选项：
+
+```
+'postmark' => [
+    'token' => env('POSTMARK_TOKEN'),
+],
+```
+如果你要给指定邮件程序使用的 Postmark message stream，可以在配置数组中添加 message_stream_id 配置选项。这个配置数组在应用程序的 config/mail.php 配置文件中：
+
+```
+'postmark' => [
+    'transport' => 'postmark',
+    'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),
+],
+```
+这样，你还可以使用不同的 message stream 来设置多个 Postmark 邮件驱动
+
+## SES 驱动
+要使用 Amazon SES 驱动，你必须先安装 PHP 的 Amazon AWS SDK 。你可以可以通过 Composer 软件包管理器安装此库:
+
+```
+composer require aws/aws-sdk-php
+```
+然后，将 config/mail.php 配置文件的 default 选项设置成 ses 并确认你的 config/mail.php 配置文件包含以下选项：
+
+```
+'ses' => [
+    'key' => env('AWS_ACCESS_KEY_ID'),
+    'secret' => env('AWS_SECRET_ACCESS_KEY'),
+    'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+],
+```
+为了通过 session token 来使用 AWS temporary credentials ，你需要向应用的 SES 配置中添加一个 token 键：
+
+```
+'ses' => [
+    'key' => env('AWS_ACCESS_KEY_ID'),
+    'secret' => env('AWS_SECRET_ACCESS_KEY'),
+    'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    'token' => env('AWS_SESSION_TOKEN'),
+],
+```
+发送邮件，如果你想传递一些 额外的选项 给 AWS SDK 的 SendEmail 方法，你可以在 ses 配置中定义一个 options 数组：
+```
+'ses' => [
+    'key' => env('AWS_ACCESS_KEY_ID'),
+    'secret' => env('AWS_SECRET_ACCESS_KEY'),
+    'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    'options' => [
+        'ConfigurationSetName' => 'MyConfigurationSet',
+        'EmailTags' => [
+            ['Name' => 'foo', 'Value' => 'bar'],
+        ],
+    ],
+],
+
+```
 
 ## 生成 Mailables#
 
