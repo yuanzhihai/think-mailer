@@ -61,9 +61,7 @@ class SesTransport extends AbstractTransport
                 array_merge(
                     $options, [
                         'Source' => $message->getEnvelope()->getSender()->toString(),
-                        'Destinations' => collect($message->getEnvelope()->getRecipients())
-                                ->values()
-                                ->all(),
+                        'Destinations' => array_map( fn($address) => $address->getAddress(),$message->getEnvelope()->getRecipients() ),
                         'RawMessage' => [
                             'Data' => $message->toString(),
                         ],
