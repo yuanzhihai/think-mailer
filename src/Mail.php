@@ -2,6 +2,8 @@
 
 namespace yzh52521;
 
+use Aws\Ses\SesClient;
+use Aws\SesV2\SesV2Client;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Transport\Dsn;
 use Symfony\Component\Mailer\Transport\SendmailTransport;
@@ -15,6 +17,8 @@ use think\helper\Str;
 use think\Manager;
 use yzh52521\mail\Mailer;
 use yzh52521\mail\transport\LogTransport;
+use yzh52521\mail\transport\SesTransport;
+use yzh52521\mail\transport\SesV2Transport;
 
 /**
  * Class Mail
@@ -92,6 +96,124 @@ class Mail extends Manager
         return new LogTransport($logger);
     }
 
+    /**
+     * Create an instance of the Symfony Amazon SES Transport driver.
+     *
+     * @param array $config
+     * @return SesTransport
+     */
+    protected function createSesDriver(array $config)
+    {
+        $config = array_merge(
+            ['version' => 'latest'],
+            $config
+        );
+
+        $config = Arr::except($config, ['transport']);
+
+        return new SesTransport(
+            new SesClient($this->addSesCredentials($config)),
+            $config['options'] ?? []
+        );
+    }
+
+    /**
+     * Create an instance of the Symfony Amazon SES V2 Transport driver.
+     *
+     * @param  array  $config
+     * @return SesV2Transport
+     */
+    protected function createSesV2Driver(array $config)
+    {
+        $config = array_merge(
+            ['version' => 'latest'],
+            $config
+        );
+
+        $config = Arr::except($config, ['transport']);
+
+        return new SesV2Transport(
+            new SesV2Client($this->addSesCredentials($config)),
+            $config['options'] ?? []
+        );
+    }
+
+    /**
+     * Create an instance of the Symfony Mailgun Transport driver.
+     *
+     * @param  array  $config
+     * @return \Symfony\Component\Mailer\Transport\TransportInterface
+     */
+    protected function createMailgunDriver(array $config)
+    {
+        $factory = new MailgunTransportFactory(null, $this->getHttpClient($config));
+
+        if (! isset($config['secret'])) {
+            $config = $this->app->config->get('mail.mailgun', []);
+        }
+
+        return $factory->create(new Dsn(
+            'mailgun+'.($config['scheme'] ?? 'https'),
+            $config['endpoint'] ?? 'default',
+            $config['secret'],
+            $config['domain']
+        ));
+    }
+
+    /**
+     * Create an instance of the Symfony Postmark Transport driver.
+     *
+     * @param  array  $config
+     * @return \Symfony\Component\Mailer\Bridge\Postmark\Transport\PostmarkApiTransport
+     */
+    protected function createPostmarkDriver(array $config)
+    {
+        $factory = new PostmarkTransportFactory(null, $this->getHttpClient($config));
+
+        $options = isset($config['message_stream_id'])
+            ? ['message_stream' => $config['message_stream_id']]
+            : [];
+
+        return $factory->create(new Dsn(
+            'postmark+api',
+            'default',
+            $config['token'] ?? $this->app['config']->get('services.postmark.token'),
+            null,
+            null,
+            $options
+        ));
+    }
+
+
+    /**
+     * Add the SES credentials to the configuration array.
+     *
+     * @param  array  $config
+     * @return array
+     */
+    protected function addSesCredentials(array $config)
+    {
+        if (! empty($config['key']) && ! empty($config['secret'])) {
+            $config['credentials'] = Arr::only($config, ['key', 'secret', 'token']);
+        }
+
+        return Arr::except($config, ['token']);
+    }
+
+    /**
+     * Get a configured Symfony HTTP client instance.
+     *
+     * @return \Symfony\Contracts\HttpClient\HttpClientInterface|null
+     */
+    protected function getHttpClient(array $config)
+    {
+        if ($options = ($config['client'] ?? false)) {
+            $maxHostConnections = Arr::pull($options, 'max_host_connections', 6);
+            $maxPendingPushes = Arr::pull($options, 'max_pending_pushes', 50);
+
+            return HttpClient::create($options, $maxHostConnections, $maxPendingPushes);
+        }
+    }
 
     /**
      * @param null|string $name
