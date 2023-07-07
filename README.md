@@ -128,7 +128,7 @@ php think make:mail OrderShipped
 public function build()
 {
     return $this->from('example@example.com', 'Example')
-                ->view('emails.orders.shipped');
+                ->view('emails/orders/shipped');
 }
 
 ```
@@ -161,7 +161,7 @@ config/mail.php 文件中指定一个全局的「发件人」地址。当某个 
  */
 public function build()
 {
-    return $this->view('emails.orders.shipped');
+    return $this->view('emails/orders/shipped');
 }
 ```
 
@@ -180,8 +180,8 @@ HTML 格式：
  */
 public function build()
 {
-    return $this->view('emails.orders.shipped')
-                ->text('emails.orders.shipped_plain');
+    return $this->view('emails/orders/shipped')
+                ->text('emails/orders/shipped_plain');
 }
 
 ```
@@ -231,7 +231,7 @@ class OrderShipped extends Mailable
      */
     public function build()
     {
-        return $this->view('emails.orders.shipped');
+        return $this->view('emails/orders/shipped');
     }
 }
 ```
@@ -287,7 +287,7 @@ class OrderShipped extends Mailable
      */
     public function build()
     {
-        return $this->view('emails.orders.shipped')
+        return $this->view('emails/orders/shipped')
                     ->with([
                         'orderName' => $this->order->name,
                         'orderPrice' => $this->order->price,
@@ -316,7 +316,7 @@ class OrderShipped extends Mailable
  */
 public function build()
 {
-    return $this->view('emails.orders.shipped')
+    return $this->view('emails/orders/shipped')
                 ->attach('/path/to/file');
 }
 ```
@@ -331,7 +331,7 @@ public function build()
  */
 public function build()
 {
-    return $this->view('emails.orders.shipped')
+    return $this->view('emails/orders/shipped')
                 ->attach('/path/to/file', [
                     'name' => 'name.pdf',
                     'mime' => 'application/pdf',
@@ -352,7 +352,7 @@ attachData 方法第一个参数接收原始字节数据，第二个参数为文
  */
 public function build()
 {
-    return $this->view('emails.orders.shipped')
+    return $this->view('emails/orders/shipped')
                 ->attachData($this->pdf, 'name.pdf', [
                     'mime' => 'application/pdf',
                 ]);
@@ -410,7 +410,7 @@ use Symfony\Component\Mime\Email;
 
 public function build()
 {
-    $this->view('emails.orders.shipped');
+    $this->view('emails/orders/shipped');
 
     $this->withSymfonyMessage(function (Email $message) {
         $message->getHeaders()->addTextHeader(
