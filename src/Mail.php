@@ -16,6 +16,7 @@ use think\helper\Arr;
 use think\helper\Str;
 use think\Manager;
 use yzh52521\mail\Mailer;
+use yzh52521\mail\transport\ArrayTransport;
 use yzh52521\mail\transport\LogTransport;
 use yzh52521\mail\transport\SesTransport;
 use yzh52521\mail\transport\SesV2Transport;
@@ -182,6 +183,16 @@ class Mail extends Manager
             null,
             $options
         ));
+    }
+
+
+    /**
+     * Create an instance of the Array Transport Driver.
+     *
+     */
+    protected function createArrayDriver()
+    {
+        return new ArrayTransport;
     }
 
 
