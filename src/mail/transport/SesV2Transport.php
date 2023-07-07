@@ -63,8 +63,6 @@ class SesV2Transport extends AbstractTransport
                         'Source' => $message->getEnvelope()->getSender()->toString(),
                         'Destination' => [
                             'ToAddresses' => collect($message->getEnvelope()->getRecipients())
-                                    ->map
-                                    ->toString()
                                     ->values()
                                     ->all(),
                         ],

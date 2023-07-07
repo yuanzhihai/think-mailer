@@ -62,8 +62,6 @@ class SesTransport extends AbstractTransport
                     $options, [
                         'Source' => $message->getEnvelope()->getSender()->toString(),
                         'Destinations' => collect($message->getEnvelope()->getRecipients())
-                                ->map
-                                ->toString()
                                 ->values()
                                 ->all(),
                         'RawMessage' => [
