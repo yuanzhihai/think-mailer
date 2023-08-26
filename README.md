@@ -503,6 +503,12 @@ class OrderShipped extends Mailable
         $this->delay =5;
     }
 }
+或者
+
+Mail::to($request->user())
+    ->cc($moreUsers)
+    ->bcc($evenMoreUsers)
+    ->later(10, new OrderShipped($order));
 ```
 
 ### 推送到指定队列
@@ -520,6 +526,16 @@ class OrderShipped extends Mailable
         $this->connection ='sqs';
     }
 }
+
+或者
+
+$message = (new OrderShipped($order))
+                ->onConnection('redis')
+                ->onQueue('emails');
+Mail::to($request->user())
+    ->cc($moreUsers)
+    ->bcc($evenMoreUsers)
+    ->queue($message);
 ```
 ### 默认队列
 
@@ -539,7 +555,7 @@ class OrderShipped extends Mailable implements ShouldQueue
 有时您可能希望捕获邮件的 HTML 内容而不发送它。为此，可以调用 render 方法。此方法将以字符串形式返回邮件类的渲染内容:
 ```php
  $order = Order::find(1);
- Mail::render(new OrderShipped($order));
+ return (new OrderShipped($order))->render();
 ```
 ## 日志驱动程序
 log 邮件驱动程序不会发送您的电子邮件，而是将所有电子邮件信息写入您的日志文件以供检查。 通常，此驱动程序仅在本地开发期间使用。有关按环境配置应用程序的更多信息，请查看 配置文档。
