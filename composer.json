@@ -22,9 +22,6 @@
         "php": ">=8.0.2",
         "symfony/mailer": "^6.0",
         "topthink/think-queue": "^3.0",
-        "cebe/markdown": "^1.1",
-        "yunwuxin/think-twig": "^3.0",
-        "tijsverkoyen/css-to-inline-styles": "^2.2",
         "topthink/framework": "^6.0|^8.0",
         "ext-fileinfo": "*"
     },
@@ -45,7 +42,7 @@
                 "mail": "src/config.php"
             },
             "services": [
-                "yzh52521\\Service"
+                "yzh52521\\mail\\Service"
             ]
         }
     }

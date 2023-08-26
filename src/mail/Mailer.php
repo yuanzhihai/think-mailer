@@ -3,11 +3,13 @@
 namespace yzh52521\mail;
 
 use Symfony\Component\Mailer\Envelope;
-use Symfony\Component\Mailer\Mailer as SymfonyMailer;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\Mailer\Transport\TransportInterface;
 use think\Container;
 use think\Queue;
 use think\queue\Queueable;
 use think\queue\ShouldQueue;
+use think\View;
 
 class Mailer
 {
@@ -28,10 +30,9 @@ class Mailer
     /** @var array 密送 */
     protected $bcc = [];
 
+    protected $queue;
 
-
-
-    public function __construct(protected SymfonyMailer $mailer,protected Queue $queue,protected Container $container)
+    public function __construct(protected View $views, protected TransportInterface $transport, protected Container $container)
     {
     }
 
@@ -113,101 +114,301 @@ class Mailer
 
     /**
      *  预览邮件
-     * @param Mailable $mailable
+     * @param string|array $view
+     * @param array $data
+     * @return string
      */
-    public function render(Mailable $mailable)
+    public function render($view, array $data = [])
     {
-        $message = $this->createMessage($mailable);
-        return $message->getSymfonyMessage()->getHtmlBody();
+        [$view, $plain, $raw] = $this->parseView($view);
+
+        $data['message'] = $this->createMessage();
+
+        return $this->renderView($view ?: $plain, $data);
     }
 
+
+    public function raw($text, $callback)
+    {
+        return $this->send(['raw' => $text], [], $callback);
+    }
+
+    /**
+     * Send a new message with only a plain part.
+     *
+     * @param string $view
+     * @param array $data
+     * @param mixed $callback
+     */
+    public function plain($view, array $data, $callback)
+    {
+        return $this->send(['text' => $view], $data, $callback);
+    }
 
     /**
      * 发送邮件
-     * @param Mailable $mailable
+     * @param Mailable|string|array $view
+     * @param array $data
+     * @param Closure|null|string $callback
      */
-    public function send(Mailable $mailable)
+    public function send($view, $data = [], $callback = null)
     {
-        if ( $mailable instanceof ShouldQueue ) {
-            $this->queue($mailable);
-        } else {
-            $this->sendNow($mailable);
+        if ($view instanceof Mailable) {
+            return $this->sendMailable($view);
         }
+
+        [$view, $plain, $raw] = $this->parseView($view);
+
+        $message = $this->createMessage();
+        if (!is_null($callback)) {
+            $callback($message);
+        }
+        $this->addContent($message, $view, $plain, $raw, $data);
+
+        $symfonyMessage = $message->getSymfonyMessage();
+
+        $this->sendSymfonyMessage($symfonyMessage);
     }
 
     /**
-     * 发送邮件(立即发送)
      * @param Mailable $mailable
+     * @return void
      */
-    public function sendNow(Mailable $mailable)
+    public function sendMailable(Mailable $mailable)
     {
-        $message = $this->createMessage($mailable);
-        if ( isset($this->to['address']) ) {
-            $message->to($this->to['address'], $this->to['name'], true);
-        }
-
-        if ( !empty($this->cc) ) {
-            $message->cc($this->cc);
-        }
-        if ( !empty($this->bcc) ) {
-            $message->bcc($this->bcc);
-        }
-        $this->sendMessage($message);
+        return $mailable instanceof ShouldQueue
+            ? $mailable->queue($this->queue)
+            : $mailable->send($this);
     }
 
     /**
-     * 推送至队列发送
-     * @param Mailable $mailable
+     * Queue a new e-mail message for sending.
+     *
+     * @param Mailable|string|array $view
+     * @param string|null $queue
+     * @return mixed
+     *
+     * @throws \InvalidArgumentException
      */
-    public function queue(Mailable $mailable)
+    public function queue($view, $queue = null)
     {
-        $job = new SendQueuedMailable($mailable);
-
-        if ( in_array(Queueable::class, class_uses_recursive($mailable)) ) {
-            $queue = $this->queue->connection($mailable->connection);
-            if ( $mailable->delay > 0 ) {
-                $queue->later($mailable->delay, $job, '', $mailable->queue);
-            } else {
-                $queue->push($job, '', $mailable->queue);
-            }
-        } else {
-            $this->queue->push($job);
+        if (!$view instanceof Mailable) {
+            throw new InvalidArgumentException('Only mailable may be queued.');
         }
+
+        return $view->queue($this->queue);
+    }
+
+    /**
+     * Queue a new e-mail message for sending on the given queue.
+     *
+     * @param string $queue
+     * @param Mailable $view
+     * @return mixed
+     */
+    public function onQueue($queue, $view)
+    {
+        return $this->queue($view, $queue);
+    }
+
+    /**
+     * Queue a new e-mail message for sending on the given queue.
+     *
+     * This method didn't match rest of framework's "onQueue" phrasing. Added "onQueue".
+     *
+     * @param string $queue
+     * @param Mailable $view
+     * @return mixed
+     */
+    public function queueOn($queue, $view)
+    {
+        return $this->onQueue($queue, $view);
+    }
+
+    /**
+     * Queue a new e-mail message for sending after (n) seconds.
+     *
+     * @param \DateTimeInterface|\DateInterval|int $delay
+     * @param Mailable $view
+     * @param string|null $queue
+     * @return mixed
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function later($delay, $view, $queue = null)
+    {
+        if (!$view instanceof Mailable) {
+            throw new InvalidArgumentException('Only mailables may be queued.');
+        }
+
+        return $view->later(
+            $delay, is_null($queue) ? $this->queue : $queue
+        );
+    }
+
+    /**
+     * Queue a new e-mail message for sending after (n) seconds on the given queue.
+     *
+     * @param string $queue
+     * @param \DateTimeInterface|\DateInterval|int $delay
+     * @param Mailable $view
+     * @return mixed
+     */
+    public function laterOn($queue, $delay, $view)
+    {
+        return $this->later($delay, $view, $queue);
     }
 
     /**
      * 创建Message
-     * @param Mailable $mailable
      * @return Message
      */
-    protected function createMessage(Mailable $mailable)
+    protected function createMessage()
     {
-        if ( !empty($this->from['address']) ) {
-            $mailable->from($this->from['address'], $this->from['name']);
+        $message = new Message(new Email());
+
+        if (!empty($this->from['address'])) {
+            $message->from($this->from['address'], $this->from['name']);
         }
 
-        if ( !empty($this->replyTo['address']) ) {
-            $mailable->replyTo($this->replyTo['address'], $this->replyTo['name']);
+        if (!empty($this->replyTo['address'])) {
+            $message->replyTo($this->replyTo['address'], $this->replyTo['name']);
         }
 
-        if ( !empty($this->returnPath['address']) ) {
-            $mailable->returnPath($this->returnPath['address']);
+        if (!empty($this->returnPath['address'])) {
+            $message->returnPath($this->returnPath['address']);
         }
 
-        return $this->container->invokeClass(Message::class, [$mailable]);
+        return $message;
+    }
+
+
+    /**
+     * Parse the given view name or array.
+     *
+     * @param \Closure|array|string $view
+     * @return array
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function parseView($view)
+    {
+        if (is_string($view) || $view instanceof \Closure) {
+            return [$view, null, null];
+        }
+
+        // If the given view is an array with numeric keys, we will just assume that
+        // both a "pretty" and "plain" view were provided, so we will return this
+        // array as is, since it should contain both views with numerical keys.
+        if (is_array($view) && isset($view[0])) {
+            return [$view[0], $view[1], null];
+        }
+
+        // If this view is an array but doesn't contain numeric keys, we will assume
+        // the views are being explicitly specified and will extract them via the
+        // named keys instead, allowing the developers to use one or the other.
+        if (is_array($view)) {
+            return [
+                $view['html'] ?? null,
+                $view['text'] ?? null,
+                $view['raw'] ?? null,
+            ];
+        }
+
+        throw new \InvalidArgumentException('Invalid view.');
     }
 
     /**
-     * 发送Message
+     * Add the content to a given message.
+     *
      * @param Message $message
+     * @param string $view
+     * @param string $plain
+     * @param string $raw
+     * @param array $data
+     * @return void
      */
-    protected function sendMessage($message)
+    protected function addContent($message, $view, $plain, $raw, $data)
+    {
+        // 处理变量中包含有对元数据嵌入的变量
+        foreach ( $data as $k => $v ) {
+            if ( str_contains($k, 'cid:') ) {
+                $message->embedImage($k, $v, $data);
+            }
+        }
+        if (isset($view)) {
+            $message->html($this->renderView($view, $data) ?: ' ');
+        }
+        if (isset($plain)) {
+            $message->text($this->renderView($plain, $data) ?: ' ');
+        }
+        if (isset($raw)) {
+            $message->text($raw);
+        }
+    }
+
+    /**
+     * Render the given view.
+     *
+     * @param Closure|string $view
+     * @param array $data
+     * @return string
+     */
+    protected function renderView($view, $data)
+    {
+        $view = value($view, $data);
+        return $view instanceof Htmlable
+            ? $view->toHtml()
+            : $this->views->fetch($view, $data);
+    }
+
+    /**
+     * Get the Symfony Transport instance.
+     *
+     * @return \Symfony\Component\Mailer\Transport\TransportInterface
+     */
+    public function getSymfonyTransport()
+    {
+        return $this->transport;
+    }
+
+    /**
+     * Set the Symfony Transport instance.
+     *
+     * @param \Symfony\Component\Mailer\Transport\TransportInterface $transport
+     * @return void
+     */
+    public function setSymfonyTransport(TransportInterface $transport)
+    {
+        $this->transport = $transport;
+    }
+
+    /**
+     * Send a Symfony Email instance.
+     *
+     * @param \Symfony\Component\Mime\Email $message
+     * @return \Symfony\Component\Mailer\SentMessage|null
+     */
+    protected function sendSymfonyMessage(Email $message)
     {
         try {
-            $this->mailer->send($message->getSymfonyMessage(), Envelope::create($message->getSymfonyMessage()));
-        } catch ( \Exception $e ) {
+            return $this->transport->send($message, Envelope::create($message));
+        } catch (\Exception $e) {
             throw new \InvalidArgumentException('error mailer: ' . $e->getMessage(), $e->getCode(), $e);
+        } finally {
+            //
         }
+    }
+
+    /**
+     * @param Queue $queue
+     * @return $this
+     */
+    public function setQueue(Queue $queue)
+    {
+        $this->queue = $queue;
+
+        return $this;
     }
 
 }

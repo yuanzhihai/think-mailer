@@ -2,24 +2,13 @@
 
 namespace yzh52521\mail;
 
-use Closure;
-use ReflectionClass;
-use ReflectionProperty;
-use Symfony\Component\Mailer\Header\TagHeader;
 use Symfony\Component\Mime\Address;
-use think\App;
 use think\helper\Str;
-use think\View;
-use think\view\driver\Twig;
-use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
-use Twig\TwigFilter;
-use yzh52521\mail\twig\TokenParser\Component;
 use Symfony\Component\Mime\Email;
 
 /**
  * Class Message
  * @package yzh52521\mail
- * @method html( $body, $charset = null )
  */
 class Message
 {
@@ -30,143 +19,11 @@ class Message
     protected Email $message;
 
 
-    public function __construct(Mailable $mailable,protected View $view,protected App $app)
+    public function __construct(Email $message)
     {
-        $this->view    = $view;
-        $this->app     = $app;
-        $this->message = new Email();
-
-        $this->build($mailable);
+        $this->message = $message;
     }
 
-    protected function build(Mailable $mailable)
-    {
-        $this->app->invoke([$mailable, 'build']);
-
-        $this->buildContent($mailable)
-            ->buildFrom($mailable)
-            ->buildRecipients($mailable)
-            ->buildTags($mailable)
-            ->buildSubject($mailable)
-            ->runCallbacks($mailable)
-            ->buildAttachments($mailable);
-    }
-
-    /**
-     * 构造数据
-     * @param Mailable $mailable
-     * @return array
-     */
-    protected function buildViewData(Mailable $mailable)
-    {
-        $data = $mailable->viewData;
-
-        foreach ( ( new ReflectionClass($mailable) )->getProperties(ReflectionProperty::IS_PUBLIC) as $property ) {
-            if ( $property->getDeclaringClass()->getName() !== Mailable::class ) {
-                $data[$property->getName()] = $property->getValue($mailable);
-            }
-        }
-
-        $data['message'] = $this;
-
-        return $data;
-    }
-
-    /**
-     * 添加内容
-     * @param Mailable $mailable
-     * @return $this
-     */
-    protected function buildContent(Mailable $mailable)
-    {
-        $data = $this->buildViewData($mailable);
-
-        if ( isset($mailable->markdown) ) {
-
-            $html = $this->parseDown($mailable->markdown, $data, $mailable->markdownCallback);
-
-            $html = ( new CssToInlineStyles() )->convert($html, file_get_contents(__DIR__ . '/resource/css/default.css'));
-
-            $this->html($html, $mailable->charset);
-        } else {
-            if ( isset($mailable->view) ) {
-                $this->html($this->fetchView($mailable->view, $data), $mailable->charset);
-            } elseif ( isset($mailable->textView) ) {
-                $method = isset($mailable->view) ? 'html' : 'text';
-
-                $this->$method($this->fetchView($mailable->textView, $data), $mailable->charset);
-            }
-        }
-        return $this;
-    }
-
-    /**
-     * Add all defined tags to the message.
-     * @return $this
-     */
-    protected function buildTags(Mailable $mailable)
-    {
-        if ( $mailable->tags ) {
-            foreach ( $mailable->tags as $tag ) {
-                $this->message->getHeaders()->add(new TagHeader($tag));
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * 解析markdown
-     * @param         $view
-     * @param         $data
-     * @param Closure $callback
-     * @return string
-     */
-    protected function parseDown($view, $data, Closure $callback = null)
-    {
-        /** @var Twig $twig */
-        $twig = $this->view->engine('twig');
-
-        $parser        = new Markdown();
-        $parser->html5 = true;
-
-        $twig->getTwig()->addFilter(new TwigFilter('markdown', function ($content) use ($parser) {
-            $content = preg_replace('/^[^\S\n]+/m', '', $content);
-            return $parser->parse($content);
-        }));
-
-        $twig->getTwig()->addTokenParser(new Component());
-
-        $twig->getLoader()->addPath(__DIR__ . '/resource/view', 'mail');
-
-        if ( $callback ) {
-            $callback($twig);
-        }
-
-        $content = $twig->getTwig()->render($view . '.twig', $data);
-
-        //清理
-        $this->view->forgetDriver('twig');
-
-        return $content;
-    }
-
-    /**
-     * 调用模板引擎渲染模板
-     * @param $view
-     * @param $param
-     * @return string
-     */
-    protected function fetchView($view, $param)
-    {
-        // 处理变量中包含有对元数据嵌入的变量
-        foreach ( $param as $k => $v ) {
-            if ( str_contains($k, 'cid:') ) {
-                $this->embedImage($k, $v, $param);
-            }
-        }
-        return $this->view->fetch($view, $param);
-    }
 
     /**
      * 对嵌入元数据的变量进行处理
@@ -177,11 +34,11 @@ class Message
      */
     protected function embedImage(string &$k, array|string &$v, array &$param)
     {
-        if ( is_array($v) && $v ) {
-            if ( !isset($v[1]) ) {
+        if (is_array($v) && $v) {
+            if (!isset($v[1])) {
                 $v[1] = 'image.jpg';
             }
-            if ( !isset($v[2]) ) {
+            if (!isset($v[2])) {
                 $v[2] = null;
             }
             [$img, $name, $mime] = $v;
@@ -194,85 +51,6 @@ class Message
         $param[$k] = $embed;
     }
 
-    /**
-     * 构造发信人
-     * @param Mailable $mailable
-     * @return $this
-     */
-    protected function buildFrom(Mailable $mailable)
-    {
-        if ( !empty($mailable->from) ) {
-            $this->from($mailable->from[0]['address'], $mailable->from[0]['name']);
-        }
-        return $this;
-    }
-
-    /**
-     * 构造收信人
-     * @param Mailable $mailable
-     * @return $this
-     */
-    protected function buildRecipients(Mailable $mailable)
-    {
-        foreach ( ['to', 'cc', 'bcc', 'replyTo'] as $type ) {
-            foreach ( $mailable->{$type} as $recipient ) {
-                $this->{$type}($recipient['address'], $recipient['name']);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * 构造标题
-     * @param Mailable $mailable
-     * @return $this
-     */
-    protected function buildSubject(Mailable $mailable)
-    {
-        if ( $mailable->subject ) {
-            $this->subject($mailable->subject);
-        } else {
-            $this->subject(Str::title(Str::snake(class_basename($mailable), ' ')));
-        }
-
-        return $this;
-    }
-
-    /**
-     * 构造附件
-     * @param Mailable $mailable
-     * @return $this
-     */
-    protected function buildAttachments(Mailable $mailable)
-    {
-        foreach ( $mailable->attachments as $attachment ) {
-            $this->attach($attachment['file'], $attachment['options']);
-        }
-
-        foreach ( $mailable->rawAttachments as $attachment ) {
-            $this->attachData(
-                $attachment['data'], $attachment['name'], $attachment['options']
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * 执行回调
-     *
-     * @param Mailable $mailable
-     * @return $this
-     */
-    protected function runCallbacks(Mailable $mailable)
-    {
-        foreach ( $mailable->callbacks as $callback ) {
-            $callback($this->getSymfonyMessage());
-        }
-
-        return $this;
-    }
 
     /**
      * Add a "from" address to the message.
@@ -329,7 +107,7 @@ class Message
      */
     public function to($address, $name = null, $override = false)
     {
-        if ( $override ) {
+        if ($override) {
             is_array($address)
                 ? $this->message->to(...$address)
                 : $this->message->to(new Address($address, (string)$name));
@@ -351,7 +129,7 @@ class Message
      */
     public function cc($address, $name = null, $override = false)
     {
-        if ( $override ) {
+        if ($override) {
             is_array($address)
                 ? $this->message->cc(...$address)
                 : $this->message->cc(new Address($address, (string)$name));
@@ -370,7 +148,7 @@ class Message
      */
     public function bcc($address, $name = null, $override = false)
     {
-        if ( $override ) {
+        if ($override) {
             is_array($address)
                 ? $this->message->bcc(...$address)
                 : $this->message->bcc(new Address($address, (string)$name));
@@ -403,19 +181,19 @@ class Message
      */
     protected function addAddresses($address, $name, $type)
     {
-        if ( is_array($address) ) {
+        if (is_array($address)) {
             $type = lcfirst($type);
 
             $addresses = collect($address)->map(function ($address, $key) {
-                if ( is_string($key) && is_string($address) ) {
+                if (is_string($key) && is_string($address)) {
                     return new Address($key, $address);
                 }
 
-                if ( is_array($address) ) {
+                if (is_array($address)) {
                     return new Address($address['email'] ?? $address['address'], $address['name'] ?? null);
                 }
 
-                if ( is_null($address) ) {
+                if (is_null($address)) {
                     return new Address($key);
                 }
 
@@ -465,10 +243,10 @@ class Message
      */
     public function attach($file, array $options = [])
     {
-        if ( empty($options['name']) ) {
+        if (empty($options['name'])) {
             $options['name'] = $file;
         }
-        if ( empty($options['mime']) ) {
+        if (empty($options['mime'])) {
             $options['mime'] = mime_content_type($file);
         }
         $this->message->attachFromPath($file, $options['name'] ?? null, $options['mime'] ?? null);

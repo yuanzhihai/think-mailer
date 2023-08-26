@@ -2,7 +2,16 @@
 
 namespace yzh52521\mail;
 
+use Closure;
+use ReflectionClass;
+use ReflectionProperty;
+use Symfony\Component\Mailer\Header\MetadataHeader;
+use Symfony\Component\Mailer\Header\TagHeader;
 use think\Collection;
+use think\Container;
+use think\helper\Str;
+use think\Queue;
+use yzh52521\MailManager;
 
 /**
  * Class Mailable
@@ -52,9 +61,6 @@ class Mailable
     /** @var string 邮件内容(纯文本) */
     public $textView;
 
-    /** @var string 邮件内容(MarkDown) */
-    public $markdown;
-
     /** @var array 动态数据 */
     public $viewData = [];
 
@@ -66,13 +72,343 @@ class Mailable
 
     public $callbacks = [];
 
-    public $markdownCallback = null;
+    /**
+     * The metadata for the message.
+     *
+     * @var array
+     */
+    protected $metadata = [];
 
 
-    protected function build()
+    /**
+     * @param MailManager|Mailer $mailer
+     * @return void
+     */
+    public function send($mailer)
     {
-        //...
+        $this->prepareMailableForDelivery();
+
+        return $mailer->send($this->buildView(), $this->buildViewData(), function ($message) {
+            $this->buildFrom($message)
+                ->buildRecipients($message)
+                ->buildSubject($message)
+                ->buildTags($message)
+                ->buildMetadata($message)
+                ->runCallbacks($message)
+                ->buildAttachments($message);
+        });
     }
+
+    /**
+     * @param Queue $queue
+     * @return mixed
+     */
+    public function queue(Queue $queue)
+    {
+        if (isset($this->delay)) {
+            return $this->later($this->delay, $queue);
+        }
+
+        $connection = property_exists($this, 'connection') ? $this->connection : null;
+
+        $queueName = property_exists($this, 'queue') ? $this->queue : null;
+
+        return $queue->connection($connection)->pushOn($queueName,$this->newQueuedJob());
+    }
+
+
+    public function later($delay, Queue $queue)
+    {
+        $connection = property_exists($this, 'connection') ? $this->connection : null;
+
+        $queueName = property_exists($this, 'queue') ? $this->queue : null;
+
+        return $queue->connection($connection)->laterOn(
+            $queueName ?: null, $delay, $this->newQueuedJob()
+        );
+    }
+
+    /**
+     * Make the queued mailable job instance.
+     *
+     * @return mixed
+     */
+    protected function newQueuedJob()
+    {
+        return Container::getInstance()->make(SendQueuedMailable::class,['mailable'=>$this]);
+    }
+
+    public function render()
+    {
+        $this->prepareMailableForDelivery();
+
+        return Container::getInstance()->make('mailer')->render( $this->buildView(), $this->buildViewData());
+    }
+
+    protected function buildView()
+    {
+        if (isset($this->html)) {
+            return array_filter([
+                'html' => $this->html,
+                'text' => $this->textView ?? null,
+            ]);
+        }
+        if (isset($this->view, $this->textView)) {
+            return [$this->view, $this->textView];
+        } elseif (isset($this->textView)) {
+            return ['text' => $this->textView];
+        }
+
+        return $this->view;
+    }
+    
+
+
+    /**
+     * 构造数据
+     * @return array
+     */
+    protected function buildViewData()
+    {
+        $data = $this->viewData;
+
+        foreach ((new ReflectionClass($this))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+            if ($property->getDeclaringClass()->getName() !== self::class) {
+                $data[$property->getName()] = $property->getValue($this);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * 构造发信人
+     * @param Message $message
+     * @return $this
+     */
+    protected function buildFrom($message)
+    {
+        if (!empty($this->from)) {
+            $message->from($this->from[0]['address'], $this->from[0]['name']);
+        }
+        return $this;
+    }
+
+    /**
+     * 构造收信人
+     * @param Message $message
+     * @return $this
+     */
+    protected function buildRecipients($message)
+    {
+        foreach (['to', 'cc', 'bcc', 'replyTo'] as $type) {
+            foreach ($this->{$type} as $recipient) {
+                $message->{$type}($recipient['address'], $recipient['name']);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * 构造标题
+     * @param Message $message
+     * @return $this
+     */
+    protected function buildSubject($message)
+    {
+        if ($this->subject) {
+            $message->subject($this->subject);
+        } else {
+            $message->subject(Str::title(Str::snake(class_basename($this), ' ')));
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * 构造附件
+     * @param Message $message
+     * @return $this
+     */
+    protected function buildAttachments($message)
+    {
+        foreach ($this->attachments as $attachment) {
+            $message->attach($attachment['file'], $attachment['options']);
+        }
+
+        foreach ($this->rawAttachments as $attachment) {
+            $message->attachData(
+                $attachment['data'], $attachment['name'], $attachment['options']
+            );
+        }
+
+        return $this;
+    }
+
+    /**
+     * Add all defined tags to the message.
+     * @param Message $message
+     * @return $this
+     */
+    protected function buildTags($message)
+    {
+        if ($this->tags) {
+            foreach ($this->tags as $tag) {
+                $message->getHeaders()->add(new TagHeader($tag));
+            }
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * Add all defined metadata to the message.
+     *
+     * @param Message $message
+     * @return $this
+     */
+    protected function buildMetadata($message)
+    {
+        if ($this->metadata) {
+            foreach ($this->metadata as $key => $value) {
+                $message->getHeaders()->add(new MetadataHeader($key, $value));
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * 执行回调
+     *
+     * @param Message $message
+     * @return $this
+     */
+    protected function runCallbacks($message)
+    {
+        foreach ($this->callbacks as $callback) {
+            $callback($message->getSymfonyMessage());
+        }
+
+        return $this;
+    }
+
+
+    private function prepareMailableForDelivery()
+    {
+        if (method_exists($this, 'build')) {
+            Container::getInstance()->invoke([$this, 'build']);
+        }
+        $this->ensureHeadersAreHydrated();
+        $this->ensureEnvelopeIsHydrated();
+        $this->ensureContentIsHydrated();
+    }
+
+    /**
+     * Ensure the mailable's headers are hydrated from the "headers" method.
+     *
+     * @return void
+     */
+    private function ensureHeadersAreHydrated()
+    {
+        if (!method_exists($this, 'headers')) {
+            return;
+        }
+
+        $headers = $this->headers();
+
+        $this->withSymfonyMessage(function ($message) use ($headers) {
+            if ($headers->messageId) {
+                $message->getHeaders()->addIdHeader('Message-Id', $headers->messageId);
+            }
+
+            if (count($headers->references) > 0) {
+                $message->getHeaders()->addTextHeader('References', $headers->referencesString());
+            }
+
+            foreach ($headers->text as $key => $value) {
+                $message->getHeaders()->addTextHeader($key, $value);
+            }
+        });
+    }
+
+    /**
+     * Ensure the mailable's "envelope" data is hydrated from the "envelope" method.
+     *
+     * @return void
+     */
+    private function ensureEnvelopeIsHydrated()
+    {
+        if (!method_exists($this, 'envelope')) {
+            return;
+        }
+
+        $envelope = $this->envelope();
+
+        if (isset($envelope->from)) {
+            $this->from($envelope->from->address, $envelope->from->name);
+        }
+
+        foreach (['to', 'cc', 'bcc', 'replyTo'] as $type) {
+            foreach ($envelope->{$type} as $address) {
+                $this->{$type}($address->address, $address->name);
+            }
+        }
+
+        if ($envelope->subject) {
+            $this->subject($envelope->subject);
+        }
+
+        foreach ($envelope->tags as $tag) {
+            $this->tag($tag);
+        }
+
+        foreach ($envelope->metadata as $key => $value) {
+            $this->metadata($key, $value);
+        }
+
+        foreach ($envelope->using as $callback) {
+            $this->withSymfonyMessage($callback);
+        }
+    }
+
+    /**
+     * Ensure the mailable's content is hydrated from the "content" method.
+     *
+     * @return void
+     */
+    private function ensureContentIsHydrated()
+    {
+        if (!method_exists($this, 'content')) {
+            return;
+        }
+
+        $content = $this->content();
+
+        if ($content->view) {
+            $this->view($content->view);
+        }
+
+        if ($content->html) {
+            $this->view($content->html);
+        }
+
+        if ($content->text) {
+            $this->text($content->text);
+        }
+
+        if ($content->htmlString) {
+            $this->html($content->htmlString);
+        }
+
+        foreach ($content->with as $key => $value) {
+            $this->with($key, $value);
+        }
+    }
+
 
     public function withSymfonyMessage($callback)
     {
@@ -153,12 +489,12 @@ class Mailable
      */
     protected function setAddress($address, $name = null, $property = 'to')
     {
-        if ( is_object($address) && !$address instanceof Collection ) {
+        if (is_object($address) && !$address instanceof Collection) {
             $address = [$address];
         }
 
-        if ( $address instanceof Collection || is_array($address) ) {
-            foreach ( $address as $user ) {
+        if ($address instanceof Collection || is_array($address)) {
+            foreach ($address as $user) {
                 $user = $this->parseUser($user);
 
                 $this->{$property}($user->email, $user->name ?? null);
@@ -176,9 +512,9 @@ class Mailable
      */
     protected function parseUser($user)
     {
-        if ( is_array($user) ) {
+        if (is_array($user)) {
             return (object)$user;
-        } elseif ( is_string($user) ) {
+        } elseif (is_string($user)) {
             return (object)['email' => $user];
         }
 
@@ -204,6 +540,58 @@ class Mailable
         };
 
         return $this;
+    }
+
+    /**
+     * Add a tag header to the message when supported by the underlying transport.
+     *
+     * @param string $value
+     * @return $this
+     */
+    public function tag($value)
+    {
+        array_push($this->tags, $value);
+
+        return $this;
+    }
+
+    /**
+     * Determine if the mailable has the given tag.
+     *
+     * @param string $value
+     * @return bool
+     */
+    public function hasTag($value)
+    {
+        return in_array($value, $this->tags) ||
+            (method_exists($this, 'envelope') && in_array($value, $this->envelope()->tags));
+    }
+
+    /**
+     * Add a metadata header to the message when supported by the underlying transport.
+     *
+     * @param string $key
+     * @param string $value
+     * @return $this
+     */
+    public function metadata($key, $value)
+    {
+        $this->metadata[$key] = $value;
+
+        return $this;
+    }
+
+    /**
+     * Determine if the mailable has the given metadata.
+     *
+     * @param string $key
+     * @param string $value
+     * @return bool
+     */
+    public function hasMetadata($key, $value)
+    {
+        return (isset($this->metadata[$key]) && $this->metadata[$key] === $value) ||
+            (method_exists($this, 'envelope') && $this->envelope()->hasMetadata($key, $value));
     }
 
     /**
@@ -247,15 +635,6 @@ class Mailable
         return $this;
     }
 
-    public function markdown($markdown, array $data = [], $callback = null)
-    {
-        $this->markdown         = $markdown;
-        $this->viewData         = $data;
-        $this->markdownCallback = $callback;
-
-        return $this;
-    }
-
     /**
      * 设置数据
      * @param      $key
@@ -264,7 +643,7 @@ class Mailable
      */
     public function with($key, $value = null)
     {
-        if ( is_array($key) ) {
+        if (is_array($key)) {
             $this->viewData = array_merge($this->viewData, $key);
         } else {
             $this->viewData[$key] = $value;

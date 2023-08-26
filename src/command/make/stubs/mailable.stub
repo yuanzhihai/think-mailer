@@ -3,11 +3,13 @@ declare (strict_types = 1);
 
 namespace {%namespace%};
 
+use think\queue\Queueable;
 use think\queue\ShouldQueue;
 use yzh52521\mail\Mailable;
 
 class {%className%} extends Mailable
 {
+    use Queueable;
     /**
      * Create a new message instance.
      *
