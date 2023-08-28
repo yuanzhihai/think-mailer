@@ -149,21 +149,26 @@ class Mailer
      * 发送邮件
      * @param Mailable|string|array $view
      * @param array $data
-     * @param Closure|null|string $callback
+     * @param \Closure|null|string $callback
      */
     public function send($view, $data = [], $callback = null)
     {
         if ($view instanceof Mailable) {
             return $this->sendMailable($view);
         }
+        $data['mailer'] = $this->transport;
 
         [$view, $plain, $raw] = $this->parseView($view);
 
-        $message = $this->createMessage();
+        $data['message'] = $message = $this->createMessage();
         if (!is_null($callback)) {
             $callback($message);
         }
         $this->addContent($message, $view, $plain, $raw, $data);
+
+        if (isset($this->to['address'])) {
+            $this->setGlobalToAndRemoveCcAndBcc($message);
+        }
 
         $symfonyMessage = $message->getSymfonyMessage();
 
@@ -179,6 +184,22 @@ class Mailer
         return $mailable instanceof ShouldQueue
             ? $mailable->queue($this->queue)
             : $mailable->send($this);
+    }
+
+    /**
+     * Set the global "to" address on the given message.
+     *
+     * @param Message $message
+     * @return void
+     */
+    protected function setGlobalToAndRemoveCcAndBcc($message)
+    {
+        $message->forgetTo();
+
+        $message->to($this->to['address'], $this->to['name'], true);
+
+        $message->forgetCc();
+        $message->forgetBcc();
     }
 
     /**
@@ -330,12 +351,6 @@ class Mailer
      */
     protected function addContent($message, $view, $plain, $raw, $data)
     {
-        // 处理变量中包含有对元数据嵌入的变量
-        foreach ( $data as $k => $v ) {
-            if ( str_contains($k, 'cid:') ) {
-                $message->embedImage($k, $v, $data);
-            }
-        }
         if (isset($view)) {
             $message->html($this->renderView($view, $data) ?: ' ');
         }
@@ -350,12 +365,18 @@ class Mailer
     /**
      * Render the given view.
      *
-     * @param Closure|string $view
+     * @param \Closure|string $view
      * @param array $data
      * @return string
      */
     protected function renderView($view, $data)
     {
+        // 处理变量中包含有对元数据嵌入的变量
+        foreach ($data as $k => $v) {
+            if (str_contains($k, 'cid:')) {
+                $data['message']->embedImage($k, $v, $data);
+            }
+        }
         $view = value($view, $data);
         return $view instanceof Htmlable
             ? $view->toHtml()

@@ -118,6 +118,22 @@ class Message
         return $this->addAddresses($address, $name, 'To');
     }
 
+    /**
+     * Remove all "to" addresses from the message.
+     *
+     * @return $this
+     */
+    public function forgetTo()
+    {
+        if ($header = $this->message->getHeaders()->get('To')) {
+            $this->addAddressDebugHeader('X-To', $this->message->getTo());
+
+            $header->setAddresses([]);
+        }
+
+        return $this;
+    }
+
 
     /**
      * Add a carbon copy to the message.
@@ -140,6 +156,22 @@ class Message
     }
 
     /**
+     * Remove all carbon copy addresses from the message.
+     *
+     * @return $this
+     */
+    public function forgetCc()
+    {
+        if ($header = $this->message->getHeaders()->get('Cc')) {
+            $this->addAddressDebugHeader('X-Cc', $this->message->getCC());
+
+            $header->setAddresses([]);
+        }
+
+        return $this;
+    }
+
+    /**
      * Add a blind carbon copy to the message.
      *
      * @param string|array $address
@@ -156,6 +188,22 @@ class Message
             return $this;
         }
         return $this->addAddresses($address, $name, 'Bcc');
+    }
+
+    /**
+     * Remove all of the blind carbon copy addresses from the message.
+     *
+     * @return $this
+     */
+    public function forgetBcc()
+    {
+        if ($header = $this->message->getHeaders()->get('Bcc')) {
+            $this->addAddressDebugHeader('X-Bcc', $this->message->getBcc());
+
+            $header->setAddresses([]);
+        }
+
+        return $this;
     }
 
     /**
@@ -204,6 +252,23 @@ class Message
         } else {
             $this->message->{"add{$type}"}(new Address($address, (string)$name));
         }
+
+        return $this;
+    }
+
+    /**
+     * Add an address debug header for a list of recipients.
+     *
+     * @param  string  $header
+     * @param  \Symfony\Component\Mime\Address[]  $addresses
+     * @return $this
+     */
+    protected function addAddressDebugHeader(string $header, array $addresses)
+    {
+        $this->message->getHeaders()->addTextHeader(
+            $header,
+            implode(', ', array_map(fn ($a) => $a->toString(), $addresses)),
+        );
 
         return $this;
     }
