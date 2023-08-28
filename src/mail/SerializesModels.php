@@ -4,6 +4,7 @@ namespace yzh52521\mail;
 
 use ReflectionClass;
 use ReflectionProperty;
+use think\Model;
 
 trait SerializesModels
 {
@@ -40,6 +41,10 @@ trait SerializesModels
             }
 
             $name = $property->getName();
+
+            if ($value instanceof Model) {
+                $value = new ModelIdentifier(get_class($value), $value->{$value->getPk()});
+            }
 
             if ($property->isPrivate()) {
                 $name = "\0{$class}\0{$name}";
@@ -80,6 +85,16 @@ trait SerializesModels
 
             if (!array_key_exists($name, $values)) {
                 continue;
+            }
+
+            if ($value instanceof ModelIdentifier) {
+                /** @var Model|\think\model\concern\SoftDelete $model */
+                $model = $value->class;
+                if (method_exists($model, 'withTrashed')) {
+                    $value = $model::withTrashed()->findOrEmpty($value->id);
+                } else {
+                    $value = $model::findOrEmpty($value->id);
+                }
             }
             $property->setValue(
                 $this, $values[$name]
