@@ -679,4 +679,23 @@ class Mailable
         return $this;
     }
 
+    /**
+     * Attach multiple files to the message.
+     *
+     * @param  array  $files
+     * @return $this
+     */
+    public function attachMany($files)
+    {
+        foreach ($files as $file => $options) {
+            if (is_int($file)) {
+                $this->attach($options);
+            } else {
+                $this->attach($file, $options);
+            }
+        }
+
+        return $this;
+    }
+
 }
