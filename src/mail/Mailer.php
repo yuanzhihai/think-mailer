@@ -114,7 +114,7 @@ class Mailer
     }
 
     /**
-     *  预览邮件
+     *  Render the given message as a view.
      * @param string|array $view
      * @param array $data
      * @return string
@@ -128,7 +128,25 @@ class Mailer
         return $this->renderView($view ?: $plain, $data);
     }
 
+    /**
+     * Send a new message with only an HTML part.
+     *
+     * @param $html
+     * @param $callback
+     * @return \Symfony\Component\Mailer\SentMessage|null
+     */
+    public function html($html, $callback)
+    {
+        return $this->send(['html' => new HtmlString($html)], [], $callback);
+    }
 
+
+    /**
+     * Send a new message with only a raw text part.
+     * @param $text
+     * @param $callback
+     * @return \Symfony\Component\Mailer\SentMessage|null
+     */
     public function raw($text, $callback)
     {
         return $this->send(['raw' => $text], [], $callback);
@@ -140,6 +158,7 @@ class Mailer
      * @param string $view
      * @param array $data
      * @param mixed $callback
+     * @return \Symfony\Component\Mailer\SentMessage|null
      */
     public function plain($view, array $data, $callback)
     {
@@ -147,10 +166,11 @@ class Mailer
     }
 
     /**
-     * 发送邮件
+     * Send a new message using a view.
      * @param Mailable|string|array $view
      * @param array $data
      * @param \Closure|null|string $callback
+     * @return \Symfony\Component\Mailer\SentMessage|null
      */
     public function send($view, $data = [], $callback = null)
     {
@@ -178,6 +198,7 @@ class Mailer
         if ($symfonySentMessage) {
             $messageSent = new MessageSent($symfonySentMessage, $data);
             $this->app->event->trigger($messageSent);
+            return $symfonySentMessage;
         }
     }
 
