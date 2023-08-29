@@ -557,5 +557,25 @@ class OrderShipped extends Mailable implements ShouldQueue
  $order = Order::find(1);
  return (new OrderShipped($order))->render();
 ```
+
+## 事件
+
+在发送邮件消息的过程中会触发 2 个事件。MessageSending 事件在消息发送之前触发，而 MessageSent 事件在消息发送后触发。请记住，这些事件是在邮件发送时触发的，而不是在排队时触发的。你可以在 event.php 中 监听事件：
+
+```php
+use yzh52521\mail\events\MessageSending;
+use yzh52521\mail\events\MessageSent;
+return [
+    'listen' => [
+        MessageSending::class => [
+            app\listeners\LogSendingMessage::class,
+        ],
+        MessageSent::class => [
+            app\listeners\LogSentMessage::class,
+        ],
+    ],
+]
+```
+
 ## 日志驱动程序
 log 邮件驱动程序不会发送您的电子邮件，而是将所有电子邮件信息写入您的日志文件以供检查。 通常，此驱动程序仅在本地开发期间使用。有关按环境配置应用程序的更多信息，请查看 配置文档。

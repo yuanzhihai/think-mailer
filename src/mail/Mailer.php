@@ -5,11 +5,12 @@ namespace yzh52521\mail;
 use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mailer\Transport\TransportInterface;
-use think\Container;
+use think\App;
 use think\Queue;
-use think\queue\Queueable;
 use think\queue\ShouldQueue;
 use think\View;
+use yzh52521\mail\events\MessageSending;
+use yzh52521\mail\events\MessageSent;
 
 class Mailer
 {
@@ -32,7 +33,7 @@ class Mailer
 
     protected $queue;
 
-    public function __construct(protected View $views, protected TransportInterface $transport, protected Container $container)
+    public function __construct(protected View $views, protected TransportInterface $transport, protected App $app)
     {
     }
 
@@ -172,7 +173,12 @@ class Mailer
 
         $symfonyMessage = $message->getSymfonyMessage();
 
-        $this->sendSymfonyMessage($symfonyMessage);
+        $this->app->event->trigger(new MessageSending($symfonyMessage, $data));
+        $symfonySentMessage = $this->sendSymfonyMessage($symfonyMessage);
+        if ($symfonySentMessage) {
+            $messageSent = new MessageSent($symfonySentMessage, $data);
+            $this->app->event->trigger($messageSent);
+        }
     }
 
     /**
