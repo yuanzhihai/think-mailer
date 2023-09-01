@@ -28,7 +28,6 @@ use yzh52521\mail\transport\SesV2Transport;
  */
 class MailManager extends Manager
 {
-    protected $app;
     /**
      * The array of resolved mailers.
      *
