@@ -28,13 +28,20 @@ use yzh52521\mail\transport\SesV2Transport;
  */
 class MailManager extends Manager
 {
-
+    protected $app;
     /**
      * The array of resolved mailers.
      *
      * @var array
      */
     protected $mailers = [];
+
+    /**
+     * The registered custom driver creators.
+     *
+     * @var array
+     */
+    protected $customCreators = [];
 
 
     /**
@@ -256,16 +263,6 @@ class MailManager extends Manager
     }
 
 
-    protected function resolveConfig(string $name)
-    {
-        return $this->getConfig($name);
-    }
-
-    protected function resolveType(string $name)
-    {
-        return $this->getMailConfig($name, 'transport', 'smtp');
-    }
-
     /**
      * 获取mail配置
      * @param string $mailer
@@ -291,13 +288,33 @@ class MailManager extends Manager
         return $this->app->config->get('mail');
     }
 
-    protected function createDriver(string $name)
+    /**
+     * @param $transport
+     * @return \Symfony\Component\Mailer\Transport\TransportInterface
+     */
+    protected function createSymfonyTransport($transport)
     {
-        $transport = parent::createDriver($name);
 
+        $config = $this->getMailConfig($transport);
+
+        if (isset($this->customCreators[$transport])) {
+            return call_user_func($this->customCreators[$transport], $config);
+        }
+
+        $method = 'create' . Str::studly($transport) . 'Driver';
+
+        if (method_exists($this, $method)) {
+            return $this->$method($config);
+        }
+
+        throw new \InvalidArgumentException( "Unsupported mail transport [$transport]" );
+    }
+
+    protected function createDriver(string $transport)
+    {
         $mailer = new Mailer(
             $this->app->view,
-            $transport,
+            $this->createSymfonyTransport($transport),
             $this->app
         );
 
@@ -329,6 +346,33 @@ class MailManager extends Manager
     public function getDefaultDriver()
     {
         return $this->getConfig('default');
+    }
+
+    /**
+     * Disconnect the given mailer and remove from local cache.
+     *
+     * @param  string|null  $name
+     * @return void
+     */
+    public function purge($name = null)
+    {
+        $name = $name ?: $this->getDefaultDriver();
+
+        unset($this->mailers[$name]);
+    }
+
+    /**
+     * Register a custom transport creator Closure.
+     *
+     * @param  string  $driver
+     * @param  \Closure  $callback
+     * @return $this
+     */
+    public function extend($driver, \Closure $callback)
+    {
+        $this->customCreators[$driver] = $callback;
+
+        return $this;
     }
 
     /**
